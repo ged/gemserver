@@ -1,0 +1,25 @@
+--- 
+excluded_pkgfiles: []
+
+project_pubdir: http://bitbucket.org/ged/gemserver/downloads
+project_pubhost: bitbucket.org
+project_homepage: http://bitbucket.org/ged/gemserver
+project_requirements: {}
+
+release_smtphost: mail.faeriemud.org
+project_description: |-
+  This is an experiemental minimalist Rubygems index and gem server written in
+  Sinatra.
+release_mailto: Ruby-Talk List <ruby-talk@ruby-lang.org>
+project_dependencies: 
+  sinatra: ">=1.0"
+project_summary: An experimental minimalist Rubygems server
+version_file: gemserver.rb
+additional_pkgfiles: 
+- data/gemserver/**/*
+dev_dependencies: {}
+
+authors: 
+  Michael Granger: ged@FaerieMUD.org
+post_install_message: ""
+project_name: gemserver

@@ -1,0 +1,33 @@
+
+<% if gemindex.length.nonzero? %>
+  <h2>Released Gems</h2>
+
+  <table id="released-gemindex" class="gemindex">
+    <thead>
+      <tr>
+        <th class="odd">Name</th>
+        <th class="even">Version</th>
+        <th class="odd">Description</th>
+      </tr>
+    </thead>
+
+    <tbody>
+    <% gemindex.latest_specs.each_with_index do |gemspec, i| %>
+    <% if (i % 2).nonzero? %>
+      <tr class="odd">
+    <% else %>
+      <tr class="even">
+    <% end %>
+        <td class="gem-name odd"><%= h gemspec.name %></td>
+        <td class="gem-version even"><%= gemspec.version %></td>
+        <td class="gem-description odd"><%= gemspec.summary %></td>
+      </tr>
+    <% end %>
+    </tbody>
+  </table>
+<% else %>
+
+  <p>No gems are published.</p>
+
+<% end %>
+
