@@ -13,11 +13,13 @@ project_description: |-
 release_mailto: Ruby-Talk List <ruby-talk@ruby-lang.org>
 project_dependencies: 
   sinatra: ">=1.0"
+  thin: ">=1.0"
 project_summary: An experimental minimalist Rubygems server
 version_file: gemserver.rb
 additional_pkgfiles: 
 - data/gemserver/**/*
-dev_dependencies: {}
+dev_dependencies: 
+  sinatra-reloader: ">=1.0"
 
 authors: 
   Michael Granger: ged@FaerieMUD.org

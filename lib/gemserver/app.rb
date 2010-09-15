@@ -55,7 +55,7 @@ class Gemserver::App < Sinatra::Base
 		end
 
 		set :config, Proc.new {
-			if configfile
+			if configfile && configfile.exist?
 				$stderr.puts "Loading configuration from %p" % [ configfile ]
 				DEFAULTS.merge( YAML.load_file(configfile) )
 			else
@@ -74,6 +74,7 @@ class Gemserver::App < Sinatra::Base
 			$stderr.puts "Serving gems from: %s" % [ path ]
 			path
 		}
+
 	end
 
 	helpers do
@@ -129,18 +130,86 @@ class Gemserver::App < Sinatra::Base
 				end
 		end
 
-
+		def indexer
+			@indexer ||= Gem::Indexer.new( self.options.gemsdir )
+		end
 	end
 
 
 	### GET /
 	get '/' do
-		indexer = Gem::Indexer.new( self.options.gemsdir )
 
 		erb :index,
 			:locals => {
-				:gemindex => indexer.collect_specs,
+				:gemindex => self.indexer.collect_specs,
 			}
+	end
+
+	### GET /gems -- render the gems table without the main layout
+	get '/gems' do
+		erb :index,
+			:layout => false,
+			:locals => {
+				:gemindex => self.indexer.collect_specs,
+			}
+	end
+
+
+	### Upload a gem
+	post '/upload' do
+		tmpfile = name = nil
+
+		# Check for an uploaded gem file in the query params
+		unless params[:gem] &&
+			(tmpfile = params[:gem][:tempfile]) &&
+			(name    = params[:gem][:filename])
+
+			status 400
+			return "Bad request".dump
+		end
+
+		# Make sure the file is a valid gem
+		format = begin
+			Gem::Format.from_file_by_path( tmpfile.path )
+		rescue Gem::Exception => err
+			$stderr.puts "Invalid gem uploaded: %s: %s" % [ err.class.name, err.message ]
+			status 406
+			header 'Accept' => 'application/x-rubygem'
+			return "Not acceptable".dump
+		rescue => err
+			$stderr.puts "Corrupted gem uploaded: %s: %s" % [ err.class.name, err.message ]
+			status 400
+			return "Bad request".dump
+		end
+
+		# Figure out where it's going to be written
+		$stderr.puts "Uploading gem: #{name.inspect}"
+		gemname = Pathname( name ).basename
+		gempath = self.options.gemsdir + 'gems' + gemname
+
+		# If it's already there, refuse to replace it
+		if gempath.exist?
+			status 403
+			return "Forbidden: can't replace existing gem #{gemname}".dump
+		end
+
+		# Write it to its final destination
+		gempath.dirname.mkpath
+		gempath.open( File::EXCL|File::CREAT|File::WRONLY, 0644 ) do |gemfile|
+			buf = ''
+			until tmpfile.eof?
+				tmpfile.read( 65536, buf )
+				until buf.empty?
+					bytes = gemfile.write( buf )
+					buf.slice!( 0, bytes )
+				end
+			end
+		end
+
+		# Re-build the indexes
+		self.indexer.generate_index
+
+		return YAML.load( format.spec.to_yaml ).to_json
 	end
 
 

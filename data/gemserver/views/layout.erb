@@ -34,6 +34,17 @@
 		<%= yield %>
 	</section>
 
+	<section id="upload">
+		<div id="dropzone">
+			<img src="/images/upload-arrow.png" width="256" height="256" alt="Upload!" />
+		</div>
+
+		<div id="upload-progress">
+		</div>
+	</section>
+
+	<aside id="error-notice"><div></div></aside>
+
 	<footer>
 		<p>
 			<span class="name">Gemserver</span>
@@ -43,6 +54,8 @@
 
 	<script src="/js/jquery-1.4.2.min.js" type="text/javascript" charset="utf-8"></script>
 	<script src="/js/jquery.tools-1.2.3.min.js" type="text/javascript" charset="utf-8"></script>
+	<script src="/js/jquery.filedrop.js" type="text/javascript" charset="utf-8"></script>
+	<script src="/js/jquery.progressbar.min.js" type="text/javascript" charset="utf-8"></script>
 	<script src="/js/gemserver.js" type="text/javascript" charset="utf-8"></script>
 		
 </body>
