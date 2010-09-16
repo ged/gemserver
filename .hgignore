@@ -2,3 +2,5 @@ data/gems/
 \.DS_Store
 config\.yml
 ^log/
+ChangeLog
+pkg/

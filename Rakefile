@@ -115,7 +115,6 @@ RAKE_TASKLIBS_URL = 'http://repo.deveiate.org/rake-tasklibs'
 LOCAL_RAKEFILE = BASEDIR + 'Rakefile.local'
 
 EXTRA_PKGFILES = Rake::FileList.new
-EXTRA_PKGFILES.include( "#{BASEDIR}/data/gemserver/**/*" )
 
 RELEASE_FILES = TEXT_FILES + 
 	SPEC_FILES + 
@@ -127,6 +126,7 @@ RELEASE_FILES = TEXT_FILES +
 	RAKE_TASKLIBS +
 	EXTRA_PKGFILES
 
+RELEASE_FILES.exclude( "#{BASEDIR}/data/gems/" )
 
 RELEASE_FILES << LOCAL_RAKEFILE.to_s if LOCAL_RAKEFILE.exist?
 
@@ -212,6 +212,8 @@ PROJECT_SCPDOCURL = "#{PROJECT_HOST}:#{PROJECT_DOCDIR}"
 
 # Gem dependencies: gemname => version
 DEPENDENCIES = {
+	'thin' => '>=1.0',
+	'json' => '>=1.4.6',
 	'sinatra' => '>=1.0',
 }
 
@@ -227,6 +229,7 @@ DEVELOPMENT_DEPENDENCIES = {
 	'text-format'  => '>= 1.0.0',
 	'tmail'        => '>= 1.2.3.1',
 	'diff-lcs'     => '>= 1.1.2',
+	'sinatra-reloader' => '>=1.0',
 }
 
 # Non-gem requirements: packagename => version
@@ -263,6 +266,10 @@ GEMSPEC   = Gem::Specification.new do |gem|
 
 	gem.files             = RELEASE_FILES
 	gem.test_files        = SPEC_FILES
+
+	# signing key and certificate chain
+	gem.signing_key       = '/Volumes/Keys/ged-private_gem_key.pem'
+	gem.cert_chain        = [File.expand_path('~/.gem/ged-public_gem_cert.pem')]
 
 	DEPENDENCIES.each do |name, version|
 		version = '>= 0' if version.length.zero?

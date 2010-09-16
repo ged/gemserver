@@ -1,5 +1,6 @@
 --- 
-excluded_pkgfiles: []
+excluded_pkgfiles: 
+- data/gems/
 
 project_pubdir: http://bitbucket.org/ged/gemserver/downloads
 project_pubhost: bitbucket.org
@@ -17,8 +18,8 @@ project_dependencies:
   json: ">=1.4.6"
 project_summary: An experimental minimalist Rubygems server
 version_file: gemserver.rb
-additional_pkgfiles: 
-- data/gemserver/**/*
+additional_pkgfiles: []
+
 dev_dependencies: 
   sinatra-reloader: ">=1.0"
 
