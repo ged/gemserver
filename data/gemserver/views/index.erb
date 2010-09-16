@@ -18,7 +18,9 @@
     <% else %>
       <tr class="even">
     <% end %>
-        <td class="gem-name odd"><%= h gemspec.name %></td>
+        <td class="gem-name odd">
+          <a href="/details/<%= gemspec.name %>"><%= h gemspec.name %></a>
+        </td>
         <td class="gem-version even"><%= gemspec.version %></td>
         <td class="gem-description odd"><%= gemspec.summary %></td>
       </tr>

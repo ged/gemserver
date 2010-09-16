@@ -138,9 +138,9 @@ class Gemserver::App < Sinatra::Base
 
 	### GET /
 	get '/' do
-
 		erb :index,
 			:locals => {
+				:config => self.options.config,
 				:gemindex => self.indexer.collect_specs,
 			}
 	end
@@ -150,7 +150,24 @@ class Gemserver::App < Sinatra::Base
 		erb :index,
 			:layout => false,
 			:locals => {
+				:config => self.options.config,
 				:gemindex => self.indexer.collect_specs,
+			}
+	end
+
+
+	### GET /details/<gemname>
+	get '/details/:gemname' do |gemname|
+		si         = self.indexer.collect_specs
+		dependency = Gem::Dependency.new( gemname )
+		gems       = si.search( dependency )
+
+		erb :details,
+			:locals => {
+				:config     => self.options.config,
+				:gemname    => gemname,
+				:gems       => gems,
+				:dependency => dependency,
 			}
 	end
 
@@ -209,6 +226,7 @@ class Gemserver::App < Sinatra::Base
 		# Re-build the indexes
 		self.indexer.generate_index
 
+		content_type( 'application/javascript' )
 		return YAML.load( format.spec.to_yaml ).to_json
 	end
 

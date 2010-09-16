@@ -14,6 +14,7 @@ release_mailto: Ruby-Talk List <ruby-talk@ruby-lang.org>
 project_dependencies: 
   sinatra: ">=1.0"
   thin: ">=1.0"
+  json: ">=1.4.6"
 project_summary: An experimental minimalist Rubygems server
 version_file: gemserver.rb
 additional_pkgfiles: 

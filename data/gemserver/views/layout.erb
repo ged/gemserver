@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-<% if defined?(name) %>
+<% if name = config['name'] %>
 	<title>Gemserver: <%= name %></title>
 <% else %>
   <title>Gemserver: <%= Socket.gethostname %></title>
@@ -19,7 +19,12 @@
 
 	<header>
 	  <hgroup>
-  		<h1>Gemserver</h1>
+    	<h1>Gemserver</h1>
+    <% if name = config['name'] %>
+      <h2><%= name %></h2>
+    <% else %>
+      <h2><%= Socket.gethostname %></h2>
+    <% end %>
 	  </hgroup>
 
 		<nav>

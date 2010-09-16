@@ -160,8 +160,14 @@ body > header h1 {
 	text-align: center;
 	margin: 0 auto;
 	font-size: 120px;
-	color: rgba(25,25,25, 0.05 );
+	color: rgba( 25,25,25, 0.05 );
 	text-shadow: 0 0 5px rgba( 25,25,25, 0.2 );
+}
+body > header h2 {
+	text-align: center;
+	margin-top: -40px;
+	font-size: 50px;
+	color: rgba(25,25,25, 0.4);
 }
 
 body > header nav {

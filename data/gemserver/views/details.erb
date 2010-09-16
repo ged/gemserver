@@ -1,0 +1,58 @@
+
+<% if gems.empty? %>
+  <p>No gems found matching '<%= h gemname %>'</p>
+<% else %>
+
+  <% gemspec = gems.first %>
+  
+  <h2><%= h gemspec.name %> <%= h gemspec.version.to_s %></h2>
+  <p class="gem-description"><%= h gemspec.description %></p>
+
+  <dl>
+    <dt>Released</dt>
+    <dd><%= h gemspec.date.strftime('%Y/%m/%d') %></dd>
+
+    <dt>Author</dt>
+    <dd><%= h gemspec.author %></dd>
+
+    <dt>Dependencies</dt>
+    <% if gemspec.dependencies.empty? %>
+    <dd>None.</dd>
+    <% else %>
+    <dd><%= gemspec.dependencies.
+      collect {|dep| %{<span class="dependency">%s</span>} % dep.to_s }.join(', ') %></dd>
+    <% end %>
+  </dl>
+
+  <% if gems.length > 1 %>
+  <h3>Other Matches For <%= dependency.to_s %></h3>
+
+  <table id="details-gemindex" class="gemindex">
+    <thead>
+      <tr>
+        <th class="odd">Name</th>
+        <th class="even">Version</th>
+        <th class="odd">Description</th>
+      </tr>
+    </thead>
+
+    <tbody>
+    <% gems[1..-1].each_with_index do |gemspec, i| %>
+    <% if (i % 2).nonzero? %>
+      <tr class="odd">
+    <% else %>
+      <tr class="even">
+    <% end %>
+        <td class="gem-name odd">
+          <a href="/details/<%= gemspec.name %>"><%= h gemspec.name %></a>
+        </td>
+        <td class="gem-version even"><%= gemspec.version %></td>
+        <td class="gem-description odd"><%= gemspec.summary %></td>
+      </tr>
+    <% end %>
+    </tbody>
+  </table>
+  <% end %>
+
+<% end %>
+
