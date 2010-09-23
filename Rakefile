@@ -64,7 +64,7 @@ MANUALDIR     = DOCSDIR + 'manual'
 
 PROJECT_NAME  = 'gemserver'
 PKG_NAME      = PROJECT_NAME.downcase
-PKG_SUMMARY   = 'An experimental minimalist Rubygems server'
+PKG_SUMMARY   = 'An experimental minimal Rubygems server'
 
 # Cruisecontrol stuff
 CC_BUILD_LABEL     = ENV['CC_BUILD_LABEL']
@@ -214,6 +214,7 @@ GEM_PUBHOST = 'rubygems.laika.com'
 
 # Gem dependencies: gemname => version
 DEPENDENCIES = {
+	'treequel' => '~> 1.1.1',
 	'thin' => '>=1.0',
 	'json' => '>=1.4.6',
 	'sinatra' => '>=1.0',
@@ -245,11 +246,21 @@ GEMSPEC   = Gem::Specification.new do |gem|
 
 	gem.summary           = PKG_SUMMARY
 	gem.description       = [
-		"This is an experiemental minimalist Rubygems index and gem server written in",
-		"Sinatra.",
+		"This is an experimental minimalist Rubygems index and gem server written in",
+		"Sinatra. It supports pushing via 'gem push', uploading via HTML5 ",
+		"drag-and-drop.",
   	  ].join( "\n" )
 	gem.post_install_message = [
-		"To run the server, ...",
+		"To run the server, create a config.ru that includes something like:",
+		"",
+		"    require 'gemserver/app'",
+		"    require 'pathname'",
+		"    Gemserver::App.set :config, Pathname('/path/to/config.yml')",
+		"    run Gemserver::App",
+		"",
+		"Then, start the server:",
+		"",
+		"    rackup -s <your adapter of choice> -rubygems /path/to/config.ru",
 	  ].join( "\n" )
 
 	gem.authors           = "Michael Granger"

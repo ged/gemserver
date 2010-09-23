@@ -160,8 +160,6 @@ class Gemserver::App < Sinatra::Base
 
 	### GET /details/<gemname>
 	get '/details/:gemname' do |gemname|
-		self.require_authentication
-
 		si         = self.indexer.collect_specs
 		dependency = Gem::Dependency.new( gemname )
 		gems       = si.search( dependency )
@@ -193,6 +191,7 @@ class Gemserver::App < Sinatra::Base
 
 	### Upload a gem
 	post '/upload' do
+		self.require_authentication
 		tmpfile = name = nil
 
 		# Check for an uploaded gem file in the query params
