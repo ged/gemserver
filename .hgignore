@@ -1,6 +1,7 @@
 data/gems/
 \.DS_Store
-config\.yml
+^config\.yml$
+^config\.ru$
 ^log/
 ChangeLog
 pkg/

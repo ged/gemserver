@@ -9,8 +9,8 @@ logfile = basedir + 'log/sinatra.log'
 
 logfile.dirname.mkpath
 log = logfile.open( 'a' )
-# $stdout.reopen( log )
-# $stderr.reopen( log )
+$stdout.reopen( log )
+$stderr.reopen( log )
 
 Gemserver::App.set :configfile, basedir + 'config.yml'
 run Gemserver::App

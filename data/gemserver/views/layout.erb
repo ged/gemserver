@@ -18,24 +18,25 @@
 <body>
 
 	<header>
-	  <hgroup>
-    	<h1>Gemserver</h1>
-    <% if name = config['name'] %>
-      <h2><%= name %></h2>
-    <% else %>
-      <h2><%= Socket.gethostname %></h2>
-    <% end %>
-	  </hgroup>
 
-		<nav>
-      <ul>
-        <li><a href="/">&#x2191; Index</a></li>
-			</ul>
-		</nav>
+		<hgroup>
+			<h1>Gemserver</h1>
+<% if name = config['name'] %>
+			<h2><%= name %></h2>
+<% else %>
+			<h2><%= Socket.gethostname %></h2>
+<% end %>
+		</hgroup>
 
 	</header>
 
-  <section id="main">
+	<nav>
+		<ul>
+			<li><a href="/">&#x2191; Index</a></li>
+		</ul>
+	</nav>
+
+	<section id="main">
 		<%= yield %>
 	</section>
 

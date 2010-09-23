@@ -131,7 +131,7 @@ RELEASE_FILES.exclude( "#{BASEDIR}/data/gems/" )
 RELEASE_FILES << LOCAL_RAKEFILE.to_s if LOCAL_RAKEFILE.exist?
 
 RELEASE_ANNOUNCE_ADDRESSES = [
-	"Ruby-Talk List <ruby-talk@ruby-lang.org>",
+	"LAIKA IT <it@lists.laika.com>",
 ]
 
 COVERAGE_MINIMUM = ENV['COVERAGE_MINIMUM'] ? Float( ENV['COVERAGE_MINIMUM'] ) : 85.0
@@ -200,15 +200,17 @@ YARD_OPTIONS = [
   ]
 
 # Release constants
-SMTP_HOST = "mail.faeriemud.org"
+SMTP_HOST = "mail.laika.com"
 SMTP_PORT = 465 # SMTP + SSL
 
 # Project constants
-PROJECT_HOST = 'bitbucket.org'
+PROJECT_HOST = ''
 PROJECT_PUBDIR = 'http://bitbucket.org/ged/gemserver/downloads'
 PROJECT_DOCDIR = "#{PROJECT_PUBDIR}/#{PKG_NAME}"
 PROJECT_SCPPUBURL = "#{PROJECT_HOST}:#{PROJECT_PUBDIR}"
 PROJECT_SCPDOCURL = "#{PROJECT_HOST}:#{PROJECT_DOCDIR}"
+
+GEM_PUBHOST = 'rubygems.laika.com'
 
 # Gem dependencies: gemname => version
 DEPENDENCIES = {
@@ -246,6 +248,9 @@ GEMSPEC   = Gem::Specification.new do |gem|
 		"This is an experiemental minimalist Rubygems index and gem server written in",
 		"Sinatra.",
   	  ].join( "\n" )
+	gem.post_install_message = [
+		"To run the server, ...",
+	  ].join( "\n" )
 
 	gem.authors           = "Michael Granger"
 	gem.email             = ["ged@FaerieMUD.org"]

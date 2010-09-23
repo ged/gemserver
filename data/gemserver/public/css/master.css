@@ -101,6 +101,7 @@ table.horizontal tbody th {
 table td {
 	padding: 2px 0.5em;
 	vertical-align: top;
+	text-align: left;
 }
 
 table td.numeric {
@@ -119,36 +120,57 @@ table td.icon img {
 table th {
 	padding: 1px 0.5em;
 }
-
 table th.odd {
 	background-color: #f6f6f6;
 }
-
 table th.even {
 	background-color: #e5e5e5;
 }
-
+table tr.even th.odd {
+	background-color: #ddd;
+}
 table tr.odd {
 	background-color: #f6ecbf;
 }
-
 table tr.odd td.even {
 	background-color: #e6ddb2;
 }
-
 table tr.even {
 	background-color: #decda8;
 }
-
 table tr.even td.even {
 	background-color: #c8b897;
 }
+
+
+#main dl, #main dt, #main dd {
+    margin: 0;
+    padding: 0;
+    line-height: 1.4em;
+}
+#main dl.metadata {
+    display: inline;
+    width: 50%;
+}
+#main dl dt {
+    float: left;
+    clear: left;
+    width: 20%;
+    font-weight: bold;
+}
+#main dl dd {
+    float: left;
+    width: 65%;
+    padding-left: 2em;
+}
+
 
 /* @end */
 
 /* @group Specific page elements */
 
 body > header {
+	display: block;
 	width: 100%;
 	position: fixed;
 	left: 0;
@@ -165,25 +187,22 @@ body > header h1 {
 }
 body > header h2 {
 	text-align: center;
-	margin-top: -40px;
+	position: relative;
+	top: -30px;
 	font-size: 50px;
-	color: rgba(25,25,25, 0.4);
+	color: rgba(25,25,25, 0.8);
 }
 
-body > header nav {
+body > nav {
 	position: absolute;
 	right: 4em;
-	top: 0;
+	top: 1em;
 }
 
-body > header nav ul {
+body > nav ul {
 	list-style: none;
 	margin: 0;
 	padding: 0;
-}
-
-body > footer p {
-	margin: 0;
 }
 
 body > footer {
@@ -191,8 +210,11 @@ body > footer {
 	margin: 0;
 	position: absolute;
 	bottom: 1em;
-	left: 0px;
-	width: 100%;
+	width: 95%;
+}
+
+body > footer p {
+	margin: 0;
 }
 
 section#main {
@@ -332,13 +354,38 @@ aside#error-notice h2 {
 	font-size: 20px;
 }
 
+ul.dependencies {
+	margin: 0;
+	text-align: left;
+	list-style: none;
+	padding: 0;
+}
+
+ul.dependencies li {
+}
+ul.dependencies li .dep-name {
+	padding: 0 0.5em;
+	border: 1px solid rgba( 100,100,100, 0.5 );
+	border-radius: 0.5em;
+	background: rgba( 240,240,240, 0.5 );
+}
+ul.dependencies .dep-details {
+	color: #666;
+	font-size: 11px;
+}
+
 /* @end */
 
 /* @group classed page elements */
 
 footer .vcsrev {
-	position: absolute;
-	right: 2em;
+	float: right;
+}
+footer .name {
+}
+
+td.gem-description {
+	text-align: left;
 }
 
 .graph svg {

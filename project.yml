@@ -1,29 +1,41 @@
 --- 
 excluded_pkgfiles: 
 - data/gems/
-
 project_pubdir: http://bitbucket.org/ged/gemserver/downloads
-project_pubhost: bitbucket.org
+project_pubhost: 
 project_homepage: http://bitbucket.org/ged/gemserver
+gem_pubhost: rubygems.laika.com
 project_requirements: {}
 
-release_smtphost: mail.faeriemud.org
+release_smtphost: mail.laika.com
 project_description: |-
-  This is an experiemental minimalist Rubygems index and gem server written in
-  Sinatra.
-release_mailto: Ruby-Talk List <ruby-talk@ruby-lang.org>
+  This is an experimental minimalist Rubygems index and gem server written in
+  Sinatra. It supports pushing via 'gem push', uploading via HTML5 
+  drag-and-drop.
+release_mailto: LAIKA IT <it@lists.laika.com>
 project_dependencies: 
-  sinatra: ">=1.0"
   thin: ">=1.0"
+  sinatra: ">=1.0"
   json: ">=1.4.6"
-project_summary: An experimental minimalist Rubygems server
+  treequel: "~> 1.1.1"
+project_summary: An experimental minimal Rubygems server
 version_file: gemserver.rb
 additional_pkgfiles: []
 
 dev_dependencies: 
   sinatra-reloader: ">=1.0"
-
 authors: 
   Michael Granger: ged@FaerieMUD.org
-post_install_message: ""
+post_install_message: |-
+  To run the server, create a config.ru that includes something like:
+
+      require 'gemserver/app'
+      require 'pathname'
+      Gemserver::App.set :config, Pathname('/path/to/config.yml')
+      run Gemserver::App
+  
+  Then, start the server:
+  
+      rackup -s <your adapter of choice> -rubygems /path/to/config.ru
+      
 project_name: gemserver

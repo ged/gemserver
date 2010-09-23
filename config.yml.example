@@ -1,0 +1,3 @@
+gemsdir: /usr/local/var/rubygems
+ldapuri: "ldap://localhost/dc=acme,dc=com"
+

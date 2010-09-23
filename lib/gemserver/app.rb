@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 
-
 require 'pathname'
 require 'rbconfig/datadir'
 require 'erb'
@@ -14,11 +13,14 @@ require 'rubygems/indexer'
 require 'sinatra/base'
 
 require 'gemserver'
+require 'gemserver/authentication'
 
 
 include ERB::Util
 
 class Gemserver::App < Sinatra::Base
+	include Gemserver::Authentication
+
 	enable :sessions, :static, :logging, :dump_errors
 
 	# The path to the gemserver's data directory
@@ -158,6 +160,8 @@ class Gemserver::App < Sinatra::Base
 
 	### GET /details/<gemname>
 	get '/details/:gemname' do |gemname|
+		self.require_authentication
+
 		si         = self.indexer.collect_specs
 		dependency = Gem::Dependency.new( gemname )
 		gems       = si.search( dependency )
@@ -169,6 +173,21 @@ class Gemserver::App < Sinatra::Base
 				:gems       => gems,
 				:dependency => dependency,
 			}
+	end
+
+
+	### POST /api/v1/gems
+	### Support for 'gem push'
+	post '/api/v1/gems' do
+		self.require_authentication
+		return "Great success!"
+	end
+
+
+	### GET /api/v1/api_key
+	post '/api/v1/api_key' do
+		self.require_authentication
+		return "Great success!"
 	end
 
 
