@@ -2,6 +2,8 @@
 
 require 'treequel'
 require 'rack/auth/basic'
+require 'openssl'
+
 
 # HTTP basic authentication wrapper for Sinatra, stolen and reworked
 # a little from:

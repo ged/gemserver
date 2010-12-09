@@ -12,7 +12,7 @@
 	<tbody>
 		<tr class="odd">
 		    <th class="odd">Released</th>
-		    <td class="even"><%= h gemspec.date.strftime('%Y/%m/%d') %></td>
+		    <td class="even"><%= time_delta_string gemspec.date %> ago</td>
 		</tr>
 		<tr class="even">
 		    <th class="odd">Author</th>

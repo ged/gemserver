@@ -1,11 +1,13 @@
 #!/usr/bin/env ruby
 
+require 'pp'
 require 'pathname'
 require 'rbconfig/datadir'
 require 'erb'
 require 'json'
 require 'yaml'
 require 'socket'
+require 'tempfile'
 
 require 'rubygems'
 require 'rubygems/indexer'
@@ -43,6 +45,22 @@ class Gemserver::App < Sinatra::Base
 	# The Marshal version of the current system
 	MARSHAL_VERSION = Gem.marshal_version
 
+	# The size of the read buffer when doing IO->IO copies
+	READ_CHUNKSIZE = 65536
+
+	# Approximate Time Constants (in seconds)
+	MINUTES = 60
+	HOURS   = 60  * MINUTES
+	DAYS    = 24  * HOURS
+	WEEKS   = 7   * DAYS
+	MONTHS  = 30  * DAYS
+	YEARS   = 365.25 * DAYS
+
+
+	# Byte size constants
+	KILOBYTE = 2 ** 10
+	MEGABYTE = 2 ** 20
+	GIGABYTE = 2 ** 30
 
 	configure( :development ) do
 		require 'sinatra/reloader'
@@ -79,62 +97,105 @@ class Gemserver::App < Sinatra::Base
 
 	end
 
-	helpers do
 
-		# Approximate Time Constants (in seconds)
-		MINUTES = 60
-		HOURS   = 60  * MINUTES
-		DAYS    = 24  * HOURS
-		WEEKS   = 7   * DAYS
-		MONTHS  = 30  * DAYS
-		YEARS   = 365.25 * DAYS
+	### Return a string describing the amount of time in the given number of
+	### seconds in terms a human can understand easily.
+	def time_delta_string( start_time )
+		start_time = Time.parse( start_time ) unless start_time.is_a?( Time )
+		seconds = Time.now - start_time
 
+		return 'less than a minute' if seconds < 60
 
-		### Return a string describing the amount of time in the given number of
-		### seconds in terms a human can understand easily.
-		def time_delta_string( start_time )
-			start = Time.parse( start_time ) or return "some time"
-			seconds = Time.now - start
+		if seconds < 50 * 60
+			return "%d minute%s" % [seconds / 60, seconds/60 == 1 ? '' : 's']
+		end
 
-			return 'less than a minute' if seconds < 60
+		return 'about an hour'					if seconds < 90 * MINUTES
+		return "%d hours" % [seconds / HOURS]	if seconds < 18 * HOURS
+		return 'one day' 						if seconds <  1 * DAYS
+		return 'about a day' 					if seconds <  2 * DAYS
+		return "%d days" % [seconds / DAYS] 	if seconds <  1 * WEEKS
+		return 'about a week' 					if seconds <  2 * WEEKS
+		return "%d weeks" % [seconds / WEEKS] 	if seconds <  3 * MONTHS
+		return "%d months" % [seconds / MONTHS] if seconds <  2 * YEARS
+		return "%d years" % [seconds / YEARS]
+	end
 
-			if seconds < 50 * 60
-				return "%d minute%s" % [seconds / 60, seconds/60 == 1 ? '' : 's']
+	### Return a string describing an amount of data in a human-readable 
+	### byte-suffixed form.
+	def byte_suffix( bytes )
+		bytes = bytes.to_f
+
+		return case
+			when bytes >= GIGABYTE then sprintf( "%0.1fG", bytes / GIGABYTE )
+			when bytes >= MEGABYTE then sprintf( "%0.1fM", bytes / MEGABYTE )
+			when bytes >= KILOBYTE then sprintf( "%0.1fK", bytes / KILOBYTE )
+			else "%db" % [ bytes.ceil ]
 			end
+	end
 
-			return 'about an hour'					if seconds < 90 * MINUTES
-			return "%d hours" % [seconds / HOURS]	if seconds < 18 * HOURS
-			return 'one day' 						if seconds <  1 * DAYS
-			return 'about a day' 					if seconds <  2 * DAYS
-			return "%d days" % [seconds / DAYS] 	if seconds <  1 * WEEKS
-			return 'about a week' 					if seconds <  2 * WEEKS
-			return "%d weeks" % [seconds / WEEKS] 	if seconds <  3 * MONTHS
-			return "%d months" % [seconds / MONTHS] if seconds <  2 * YEARS
-			return "%d years" % [seconds / YEARS]
+
+	### Return a gem indexer for the configured gemsdir, creating it if necessary.
+	def indexer
+		@indexer ||= Gem::Indexer.new( self.options.gemsdir )
+	end
+
+
+	### Copy data from the +reader+ to the +writer+ in a memory-efficient manner.
+	def copy_io( reader, writer )
+		buf = ''
+		bytes_copied = 0
+
+		while reader.read( READ_CHUNKSIZE, buf )
+			until buf.empty?
+				bytes = writer.write( buf )
+				buf.slice!( 0, bytes )
+				bytes_copied += bytes
+			end
 		end
 
+		return bytes_copied
+	end
 
-		# Byte size constants
-		KILOBYTE = 1024
-		MEGABYTE = 1024 ** 2
-		GIGABYTE = 1024 ** 3
 
-		### Return a string describing an amount of data in a human-readable 
-		### byte-suffixed form.
-		def byte_suffix( bytes )
-			bytes = bytes.to_f
+	### Given a Tempfile object open to uploaded gem data, move it into the
+	### repo, post-process it, and return a Gem::Format object for it.
+	def process_gem( tmpfile )
 
-			return case
-				when bytes >= GIGABYTE then sprintf( "%0.1fG", bytes / GIGABYTE )
-				when bytes >= MEGABYTE then sprintf( "%0.1fM", bytes / MEGABYTE )
-				when bytes >= KILOBYTE then sprintf( "%0.1fK", bytes / KILOBYTE )
-				else "%db" % [ bytes.ceil ]
-				end
+		# Make sure the file is a valid gem
+		format = begin
+			Gem::Format.from_file_by_path( tmpfile.path )
+		rescue Gem::Exception => err
+			$stderr.puts "Invalid gem uploaded: %s: %s" % [ err.class.name, err.message ]
+			header 'Accept' => 'application/x-rubygem'
+			throw :halt, [ 406, "Not acceptable" ]
+		rescue => err
+			$stderr.puts "Corrupted gem uploaded: %s: %s" % [ err.class.name, err.message ]
+			throw :halt, [ 400, "Bad request" ]
 		end
 
-		def indexer
-			@indexer ||= Gem::Indexer.new( self.options.gemsdir )
+		# Figure out where it's going to be written
+		name = format.spec.original_name + '.gem'
+		$stderr.puts "Uploading gem: #{name.inspect}"
+		gemname = Pathname( name ).basename
+		gempath = self.options.gemsdir + 'gems' + gemname
+
+		# If it's already there, refuse to replace it
+		# if gempath.exist?
+		# 	status 403
+		# 	return "Forbidden: can't replace existing gem #{gemname}".dump
+		# end
+
+		# Write it to its final destination
+		gempath.dirname.mkpath
+		gempath.open( File::TRUNC|File::CREAT|File::WRONLY, 0644 ) do |gemfile|
+			copy_io( tmpfile, gemfile )
 		end
+
+		# Re-build the indexes
+		self.indexer.generate_index
+
+		return format
 	end
 
 
@@ -177,8 +238,18 @@ class Gemserver::App < Sinatra::Base
 	### POST /api/v1/gems
 	### Support for 'gem push'
 	post '/api/v1/gems' do
-		self.require_authentication
-		return "Great success!"
+		# self.require_authentication
+
+		$stderr.puts "Processing upload..."
+		tmpfile = Tempfile.new( "uploaded_gem" )
+		$stderr.puts "  buffering posted data to %p" % [ tmpfile.path ]
+		bytes = copy_io( request.body, tmpfile )
+		$stderr.puts "  done (%d Kb). Processing..." % [ bytes/1024 ]
+		tmpfile.rewind
+		format = process_gem( tmpfile )
+		$stderr.puts "  processed: %s" % [ format.spec.original_name ]
+
+		return "Accepted #{format.spec.original_name}.gem"
 	end
 
 
@@ -192,57 +263,15 @@ class Gemserver::App < Sinatra::Base
 	### Upload a gem
 	post '/upload' do
 		self.require_authentication
-		tmpfile = name = nil
+		tmpfile = nil
 
 		# Check for an uploaded gem file in the query params
-		unless params[:gem] &&
-			(tmpfile = params[:gem][:tempfile]) &&
-			(name    = params[:gem][:filename])
-
+		unless params[:gem] && (tmpfile = params[:gem][:tempfile])
 			status 400
 			return "Bad request".dump
 		end
 
-		# Make sure the file is a valid gem
-		format = begin
-			Gem::Format.from_file_by_path( tmpfile.path )
-		rescue Gem::Exception => err
-			$stderr.puts "Invalid gem uploaded: %s: %s" % [ err.class.name, err.message ]
-			status 406
-			header 'Accept' => 'application/x-rubygem'
-			return "Not acceptable".dump
-		rescue => err
-			$stderr.puts "Corrupted gem uploaded: %s: %s" % [ err.class.name, err.message ]
-			status 400
-			return "Bad request".dump
-		end
-
-		# Figure out where it's going to be written
-		$stderr.puts "Uploading gem: #{name.inspect}"
-		gemname = Pathname( name ).basename
-		gempath = self.options.gemsdir + 'gems' + gemname
-
-		# If it's already there, refuse to replace it
-		if gempath.exist?
-			status 403
-			return "Forbidden: can't replace existing gem #{gemname}".dump
-		end
-
-		# Write it to its final destination
-		gempath.dirname.mkpath
-		gempath.open( File::EXCL|File::CREAT|File::WRONLY, 0644 ) do |gemfile|
-			buf = ''
-			until tmpfile.eof?
-				tmpfile.read( 65536, buf )
-				until buf.empty?
-					bytes = gemfile.write( buf )
-					buf.slice!( 0, bytes )
-				end
-			end
-		end
-
-		# Re-build the indexes
-		self.indexer.generate_index
+		format = process_gem( tmpfile )
 
 		content_type( 'application/javascript' )
 		return YAML.load( format.spec.to_yaml ).to_json
