@@ -39,7 +39,7 @@ module Gemserver::Authentication
 	end
 
 
-	### Returns true of the current response has provided valid authentication.
+	### Returns true if the current response has provided valid authentication.
 	def authenticated?
 		return self.request.env['REMOTE_USER'] ? true : false
 	end
@@ -93,6 +93,5 @@ module Gemserver::Authentication
 
 		request.env['REMOTE_USER'] = authrequest.username
 	end
-
 
 end # module Gemserver::Authentication
