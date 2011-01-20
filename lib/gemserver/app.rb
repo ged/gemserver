@@ -1,13 +1,11 @@
 #!/usr/bin/env ruby
 
-require 'pp'
 require 'pathname'
 require 'rbconfig/datadir'
 require 'erb'
 require 'json'
 require 'yaml'
 require 'socket'
-require 'tempfile'
 
 require 'rubygems'
 require 'rubygems/indexer'
@@ -16,6 +14,7 @@ require 'sinatra/base'
 
 require 'gemserver'
 require 'gemserver/authentication'
+require 'gemserver/keystore'
 
 
 include ERB::Util
@@ -25,51 +24,19 @@ class Gemserver::App < Sinatra::Base
 
 	enable :sessions, :static, :logging, :dump_errors
 
-	# The path to the gemserver's data directory
-	SYSTEM_DATADIR = Pathname( Config.datadir('gemserver') )
-
-	# The path to the directory that contains the gem data
-	DEFAULT_GEMSDIR = SYSTEM_DATADIR + 'gems'
-
 	# Default configuration values
 	DEFAULTS = {
-		'gemsdir' => DEFAULT_GEMSDIR,
+		'gemsdir' => Gemserver::DEFAULT_GEMSDIR,
 	}
-
-	# The name of the regular gems index
-	RELEASE_GEM_INDEXFILE = "specs.%s.gz" % [ Gem.marshal_version ]
-
-	# The name of the prerelease gems index
-	PRERELEASE_GEM_INDEXFILE = "prerelease_specs.%s.gz" % [ Gem.marshal_version ]
-
-	# The Marshal version of the current system
-	MARSHAL_VERSION = Gem.marshal_version
 
 	# The size of the read buffer when doing IO->IO copies
 	READ_CHUNKSIZE = 65536
 
-	# Approximate Time Constants (in seconds)
-	MINUTES = 60
-	HOURS   = 60  * MINUTES
-	DAYS    = 24  * HOURS
-	WEEKS   = 7   * DAYS
-	MONTHS  = 30  * DAYS
-	YEARS   = 365.25 * DAYS
 
-
-	# Byte size constants
-	KILOBYTE = 2 ** 10
-	MEGABYTE = 2 ** 20
-	GIGABYTE = 2 ** 30
-
-	configure( :development ) do
-		require 'sinatra/reloader'
-		register Sinatra::Reloader
-	end
-
+	# Configuration
 	configure do
-		if SYSTEM_DATADIR.exist?
-			set :root, SYSTEM_DATADIR.to_s
+		if Gemserver::SYSTEM_DATADIR.exist?
+			set :root, Gemserver::SYSTEM_DATADIR.to_s
 		else
 			set :root, Pathname( __FILE__ ).dirname.parent.parent + 'data/gemserver'
 		end
@@ -88,115 +55,80 @@ class Gemserver::App < Sinatra::Base
 			path = if config['gemsdir']
 				Pathname( config['gemsdir'] )
 			else
-				Pathname( DEFAULT_GEMSDIR )
+				Pathname( Gemserver::DEFAULT_GEMSDIR )
 			end
 
-			$stderr.puts "Serving gems from: %s" % [ path ]
 			path
 		}
 
-	end
+	end # configure
+
+	helpers do
+
+		# Approximate Time Constants (in seconds)
+		MINUTES = 60
+		HOURS   = 60  * MINUTES
+		DAYS    = 24  * HOURS
+		WEEKS   = 7   * DAYS
+		MONTHS  = 30  * DAYS
+		YEARS   = 365.25 * DAYS
 
 
-	### Return a string describing the amount of time in the given number of
-	### seconds in terms a human can understand easily.
-	def time_delta_string( start_time )
-		start_time = Time.parse( start_time ) unless start_time.is_a?( Time )
-		seconds = Time.now - start_time
+		### Return a string describing the amount of time in the given number of
+		### seconds in terms a human can understand easily.
+		def time_delta_string( start_time )
+			start = Time.parse( start_time ) or return "some time"
+			seconds = Time.now - start
 
-		return 'less than a minute' if seconds < 60
+			return 'less than a minute' if seconds < 60
 
-		if seconds < 50 * 60
-			return "%d minute%s" % [seconds / 60, seconds/60 == 1 ? '' : 's']
-		end
-
-		return 'about an hour'					if seconds < 90 * MINUTES
-		return "%d hours" % [seconds / HOURS]	if seconds < 18 * HOURS
-		return 'one day' 						if seconds <  1 * DAYS
-		return 'about a day' 					if seconds <  2 * DAYS
-		return "%d days" % [seconds / DAYS] 	if seconds <  1 * WEEKS
-		return 'about a week' 					if seconds <  2 * WEEKS
-		return "%d weeks" % [seconds / WEEKS] 	if seconds <  3 * MONTHS
-		return "%d months" % [seconds / MONTHS] if seconds <  2 * YEARS
-		return "%d years" % [seconds / YEARS]
-	end
-
-	### Return a string describing an amount of data in a human-readable 
-	### byte-suffixed form.
-	def byte_suffix( bytes )
-		bytes = bytes.to_f
-
-		return case
-			when bytes >= GIGABYTE then sprintf( "%0.1fG", bytes / GIGABYTE )
-			when bytes >= MEGABYTE then sprintf( "%0.1fM", bytes / MEGABYTE )
-			when bytes >= KILOBYTE then sprintf( "%0.1fK", bytes / KILOBYTE )
-			else "%db" % [ bytes.ceil ]
+			if seconds < 50 * 60
+				return "%d minute%s" % [seconds / 60, seconds/60 == 1 ? '' : 's']
 			end
-	end
 
-
-	### Return a gem indexer for the configured gemsdir, creating it if necessary.
-	def indexer
-		@indexer ||= Gem::Indexer.new( self.options.gemsdir )
-	end
-
-
-	### Copy data from the +reader+ to the +writer+ in a memory-efficient manner.
-	def copy_io( reader, writer )
-		buf = ''
-		bytes_copied = 0
-
-		while reader.read( READ_CHUNKSIZE, buf )
-			until buf.empty?
-				bytes = writer.write( buf )
-				buf.slice!( 0, bytes )
-				bytes_copied += bytes
-			end
+			return 'about an hour'					if seconds < 90 * MINUTES
+			return "%d hours" % [seconds / HOURS]	if seconds < 18 * HOURS
+			return 'one day' 						if seconds <  1 * DAYS
+			return 'about a day' 					if seconds <  2 * DAYS
+			return "%d days" % [seconds / DAYS] 	if seconds <  1 * WEEKS
+			return 'about a week' 					if seconds <  2 * WEEKS
+			return "%d weeks" % [seconds / WEEKS] 	if seconds <  3 * MONTHS
+			return "%d months" % [seconds / MONTHS] if seconds <  2 * YEARS
+			return "%d years" % [seconds / YEARS]
 		end
 
-		return bytes_copied
-	end
 
+		# Byte size constants
+		KILOBYTE = 1024
+		MEGABYTE = 1024 ** 2
+		GIGABYTE = 1024 ** 3
 
-	### Given a Tempfile object open to uploaded gem data, move it into the
-	### repo, post-process it, and return a Gem::Format object for it.
-	def process_gem( tmpfile )
+		### Return a string describing an amount of data in a human-readable 
+		### byte-suffixed form.
+		def byte_suffix( bytes )
+			bytes = bytes.to_f
 
-		# Make sure the file is a valid gem
-		format = begin
-			Gem::Format.from_file_by_path( tmpfile.path )
-		rescue Gem::Exception => err
-			$stderr.puts "Invalid gem uploaded: %s: %s" % [ err.class.name, err.message ]
-			header 'Accept' => 'application/x-rubygem'
-			throw :halt, [ 406, "Not acceptable" ]
-		rescue => err
-			$stderr.puts "Corrupted gem uploaded: %s: %s" % [ err.class.name, err.message ]
-			throw :halt, [ 400, "Bad request" ]
+			return case
+				when bytes >= GIGABYTE then sprintf( "%0.1fG", bytes / GIGABYTE )
+				when bytes >= MEGABYTE then sprintf( "%0.1fM", bytes / MEGABYTE )
+				when bytes >= KILOBYTE then sprintf( "%0.1fK", bytes / KILOBYTE )
+				else "%db" % [ bytes.ceil ]
+				end
 		end
 
-		# Figure out where it's going to be written
-		name = format.spec.original_name + '.gem'
-		$stderr.puts "Uploading gem: #{name.inspect}"
-		gemname = Pathname( name ).basename
-		gempath = self.options.gemsdir + 'gems' + gemname
 
-		# If it's already there, refuse to replace it
-		# if gempath.exist?
-		# 	status 403
-		# 	return "Forbidden: can't replace existing gem #{gemname}".dump
-		# end
-
-		# Write it to its final destination
-		gempath.dirname.mkpath
-		gempath.open( File::TRUNC|File::CREAT|File::WRONLY, 0644 ) do |gemfile|
-			copy_io( tmpfile, gemfile )
+		### Fetch the Rubygems indexer, creating it if necessary
+		def indexer
+			@indexer ||= Gem::Indexer.new( self.options.gemsdir )
 		end
 
-		# Re-build the indexes
-		self.indexer.generate_index
 
-		return format
-	end
+		### Fetch the Gemserver's keystore object, creating it if necessary
+		def keystore
+			@keystore ||= Gemserver::Keystore.new( self.options.gemsdir )
+		end
+
+	end # helpers
 
 
 	### GET /
@@ -238,43 +170,56 @@ class Gemserver::App < Sinatra::Base
 	### POST /api/v1/gems
 	### Support for 'gem push'
 	post '/api/v1/gems' do
-		# self.require_authentication
+		$stderr.puts "Gem push: "
 
-		$stderr.puts "Processing upload..."
-		tmpfile = Tempfile.new( "uploaded_gem" )
-		$stderr.puts "  buffering posted data to %p" % [ tmpfile.path ]
-		bytes = copy_io( request.body, tmpfile )
-		$stderr.puts "  done (%d Kb). Processing..." % [ bytes/1024 ]
-		tmpfile.rewind
-		format = process_gem( tmpfile )
-		$stderr.puts "  processed: %s" % [ format.spec.original_name ]
+		# Get the token, or respond with a 401 if there isn't one
+		apikey = self.env['HTTP_AUTHORIZATION']
+		unless apikey && self.keystore.apikey_exists?( apikey )
+			$stderr.puts "Bad/missing API key: %p" % [ apikey ]
+			self.response['WWW-Authenticate'] = %(apikey realm="gemserver")
+			throw :halt, [ 401, 'Authorization required' ]
+		end
 
-		return "Accepted #{format.spec.original_name}.gem"
+		$stderr.puts "Accepted API key."
+		io = request.body.instance_variable_get( :@input )
+		$stderr.puts "  unwrapped the IO from the half-assed rack wrapper: %p" % [ io ]
+		gemspec = handle_gem_upload( io )
+
+		content_type( 'text/plain' )
+		return "Registered %s v%s." % [ gemspec.name, gemspec.version ]
 	end
 
 
 	### GET /api/v1/api_key
-	post '/api/v1/api_key' do
+	get '/api/v1/api_key' do
 		self.require_authentication
-		return "Great success!"
+
+		username, password = self.auth.credentials
+		apikey = self.keystore.get_apikey( username ) || 
+		         self.keystore.make_apikey( username, password )
+
+		return apikey
 	end
 
 
 	### Upload a gem
 	post '/upload' do
 		self.require_authentication
-		tmpfile = nil
+		tmpfile = name = nil
 
 		# Check for an uploaded gem file in the query params
-		unless params[:gem] && (tmpfile = params[:gem][:tempfile])
+		unless params[:gem] &&
+			(tmpfile = params[:gem][:tempfile]) &&
+			(name    = params[:gem][:filename])
+
 			status 400
 			return "Bad request".dump
 		end
 
-		format = process_gem( tmpfile )
+		gemspec = handle_gem_upload( tmpfile )
 
 		content_type( 'application/javascript' )
-		return YAML.load( format.spec.to_yaml ).to_json
+		return YAML.load( gemspec.to_yaml ).to_json
 	end
 
 
@@ -286,7 +231,7 @@ class Gemserver::App < Sinatra::Base
 		send_file( filepath )
 	end
 
-	get /\.#{Regexp.escape MARSHAL_VERSION}\.gz$/ do
+	get /\.#{Regexp.escape Gemserver::MARSHAL_VERSION}\.gz$/ do
 		filepath = self.options.gemsdir + self.request.path_info[1..-1]
 		$stderr.puts "Fetching gzip-compressed file %p for path_info: %p..." %
 			[ filepath, self.request.path_info ]
@@ -294,13 +239,76 @@ class Gemserver::App < Sinatra::Base
 		send_file( filepath )
 	end
 
-	get /(?:^yaml|\.(?:#{Regexp.escape MARSHAL_VERSION}|gem))$/ do
+	get /(?:^yaml|\.(?:#{Regexp.escape Gemserver::MARSHAL_VERSION}|gem))$/ do
 		filepath = self.options.gemsdir + self.request.path_info[1..-1]
 		$stderr.puts "Fetching plain file %p for path_info: %p..." %
 			[ filepath, self.request.path_info ]
 		send_file( filepath )
 	end
 
+
+	#########
+	protected
+	#########
+
+	### Read a gem from the given +io+, install it into the gem datadir, and rebuild
+	### the index. Return the Gem::Specification from the uploaded gem.
+	def handle_gem_upload( io )
+		pkg = nil
+
+		# Make sure the file is a valid gem
+		if io.respond_to?( :string )
+			$stderr.puts "Reading gem from memory"
+			pkg = Gem::Format.from_io( io )
+			io = StringIO.new( io.string )
+		else
+			$stderr.puts "Reading gem from tmpfile: %s" % [ io.path ]
+			pkg = Gem::Format.from_file_by_path( io.path )
+		end
+
+		# Figure out where it's going to be written
+		$stderr.puts "Handling upload for gem: %s (v%s)" % [ pkg.spec.name, pkg.spec.version ]
+		gemname = "%s-%s.gem" % [ pkg.spec.name, pkg.spec.version ]
+		gempath = self.options.gemsdir + 'gems' + gemname
+
+		# If it's already there, refuse to replace it
+		throw :halt, [403, "Forbidden: can't replace existing gem #{gemname}"] if gempath.exist?
+
+		# Write it to its final destination
+		totalbytes = 0
+		gempath.dirname.mkpath
+		gempath.open( File::EXCL|File::CREAT|File::WRONLY, 0644 ) do |gemfile|
+			totalbytes = copy_io( io, gemfile )
+		end
+		$stderr.puts "  done writing (%s)." % [ byte_suffix(totalbytes) ]
+		$stderr.puts "  gem says it's: %s" % [ byte_suffix(gempath.size) ]
+
+		# Re-build the indexes
+		self.indexer.generate_index
+
+		return pkg.spec
+	rescue => err
+		$stderr.puts "Corrupted gem uploaded: %s: %s" % [ err.class.name, err.message ]
+		$stderr.puts "  " + err.backtrace.join( "\n  " )
+		throw :halt, [400, "Bad request"]
+	end
+
+
+	### Copy data from the +reader+ to the +writer+ in a memory-efficient manner.
+	def copy_io( reader, writer )
+		buf = ''
+		bytes_copied = 0
+
+		while reader.read( READ_CHUNKSIZE, buf )
+			until buf.empty?
+				bytes = writer.write( buf )
+				buf.slice!( 0, bytes )
+				bytes_copied += bytes
+			end
+		end
+
+		return bytes_copied
+	end
 
 end # class Gemserver::App
 
