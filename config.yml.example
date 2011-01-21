@@ -1,3 +1,5 @@
-gemsdir: /usr/local/var/rubygems
-ldapuri: "ldap://localhost/dc=acme,dc=com"
+gemserver:
+  name: Acme
+  gemsdir: /usr/local/var/rubygems
+  ldapuri: "ldap://ldap.acme.com/dc=acme,dc=com"
 

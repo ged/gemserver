@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'pathname'
-require 'rbconfig/datadir'
+require 'rbconfig'
 require 'erb'
 require 'json'
 require 'yaml'
@@ -20,116 +20,42 @@ require 'gemserver/keystore'
 include ERB::Util
 
 class Gemserver::App < Sinatra::Base
+	extend Configurability
 	include Gemserver::Authentication
 
+	# Configurability API -- register for the 'gemserver' section of the config
+	config_key :gemserver
+
+	# Sinatra API -- add some Rack middleware
 	enable :sessions, :static, :logging, :dump_errors
 
-	# Default configuration values
-	DEFAULTS = {
-		'gemsdir' => Gemserver::DEFAULT_GEMSDIR,
-	}
 
 	# The size of the read buffer when doing IO->IO copies
 	READ_CHUNKSIZE = 65536
 
 
-	# Configuration
-	configure do
+	### Return a Pathname to the application's data directory. If it's installed, this will
+	### be a subdirectory of the installed datadir; if it's being run in-place, it will be
+	### derived from a relative path from this file.
+	def self::root
 		if Gemserver::SYSTEM_DATADIR.exist?
-			set :root, Gemserver::SYSTEM_DATADIR.to_s
+			return Gemserver::SYSTEM_DATADIR.to_s
 		else
-			set :root, Pathname( __FILE__ ).dirname.parent.parent + 'data/gemserver'
+			return Pathname( __FILE__ ).dirname.parent.parent + 'data/gemserver'
 		end
-
-		set :config, Proc.new {
-			if configfile && configfile.exist?
-				$stderr.puts "Loading configuration from %p" % [ configfile ]
-				DEFAULTS.merge( YAML.load_file(configfile) )
-			else
-				$stderr.puts "Using default config: %p" % [ DEFAULTS ]
-				DEFAULTS.dup
-			end
-		}
-
-		set :gemsdir, Proc.new {
-			path = if config['gemsdir']
-				Pathname( config['gemsdir'] )
-			else
-				Pathname( Gemserver::DEFAULT_GEMSDIR )
-			end
-
-			path
-		}
-
-	end # configure
-
-	helpers do
-
-		# Approximate Time Constants (in seconds)
-		MINUTES = 60
-		HOURS   = 60  * MINUTES
-		DAYS    = 24  * HOURS
-		WEEKS   = 7   * DAYS
-		MONTHS  = 30  * DAYS
-		YEARS   = 365.25 * DAYS
+	end
 
 
-		### Return a string describing the amount of time in the given number of
-		### seconds in terms a human can understand easily.
-		def time_delta_string( start_time )
-			start = Time.parse( start_time ) or return "some time"
-			seconds = Time.now - start
-
-			return 'less than a minute' if seconds < 60
-
-			if seconds < 50 * 60
-				return "%d minute%s" % [seconds / 60, seconds/60 == 1 ? '' : 's']
-			end
-
-			return 'about an hour'					if seconds < 90 * MINUTES
-			return "%d hours" % [seconds / HOURS]	if seconds < 18 * HOURS
-			return 'one day' 						if seconds <  1 * DAYS
-			return 'about a day' 					if seconds <  2 * DAYS
-			return "%d days" % [seconds / DAYS] 	if seconds <  1 * WEEKS
-			return 'about a week' 					if seconds <  2 * WEEKS
-			return "%d weeks" % [seconds / WEEKS] 	if seconds <  3 * MONTHS
-			return "%d months" % [seconds / MONTHS] if seconds <  2 * YEARS
-			return "%d years" % [seconds / YEARS]
-		end
+	### Return the application config.
+	def self::configure( config )
+		set :config, config
+		set :gemsdir, Pathname( config.gemsdir || Gemserver::DEFAULT_GEMSDIR )
+	end
 
 
-		# Byte size constants
-		KILOBYTE = 1024
-		MEGABYTE = 1024 ** 2
-		GIGABYTE = 1024 ** 3
-
-		### Return a string describing an amount of data in a human-readable 
-		### byte-suffixed form.
-		def byte_suffix( bytes )
-			bytes = bytes.to_f
-
-			return case
-				when bytes >= GIGABYTE then sprintf( "%0.1fG", bytes / GIGABYTE )
-				when bytes >= MEGABYTE then sprintf( "%0.1fM", bytes / MEGABYTE )
-				when bytes >= KILOBYTE then sprintf( "%0.1fK", bytes / KILOBYTE )
-				else "%db" % [ bytes.ceil ]
-				end
-		end
-
-
-		### Fetch the Rubygems indexer, creating it if necessary
-		def indexer
-			@indexer ||= Gem::Indexer.new( self.options.gemsdir )
-		end
-
-
-		### Fetch the Gemserver's keystore object, creating it if necessary
-		def keystore
-			@keystore ||= Gemserver::Keystore.new( self.options.gemsdir )
-		end
-
-	end # helpers
-
+	#################################################################
+	###	A C T I O N S
+	#################################################################
 
 	### GET /
 	get '/' do
@@ -181,8 +107,9 @@ class Gemserver::App < Sinatra::Base
 		end
 
 		$stderr.puts "Accepted API key."
-		io = request.body.instance_variable_get( :@input )
-		$stderr.puts "  unwrapped the IO from the half-assed rack wrapper: %p" % [ io ]
+		io = request.body
+		# io = request.body.instance_variable_get( :@input )
+		# $stderr.puts "  unwrapped the IO from the half-assed rack wrapper: %p" % [ io ]
 		gemspec = handle_gem_upload( io )
 
 		content_type( 'text/plain' )
@@ -223,6 +150,7 @@ class Gemserver::App < Sinatra::Base
 	end
 
 
+	### Rubygems index files
 	get /\.(rz|Z)$/ do
 		filepath = self.options.gemsdir + self.request.path_info[1..-1]
 		$stderr.puts "Fetching deflated file %p for path_info: %p..." %
@@ -250,6 +178,18 @@ class Gemserver::App < Sinatra::Base
 	#########
 	protected
 	#########
+
+	### Fetch the Rubygems indexer, creating it if necessary
+	def indexer
+		@indexer ||= Gem::Indexer.new( self.options.gemsdir )
+	end
+
+
+	### Fetch the Gemserver's keystore object, creating it if necessary
+	def keystore
+		@keystore ||= Gemserver::Keystore.new( self.options.gemsdir )
+	end
+
 
 	### Read a gem from the given +io+, install it into the gem datadir, and rebuild
 	### the index. Return the Gem::Specification from the uploaded gem.
@@ -308,6 +248,68 @@ class Gemserver::App < Sinatra::Base
 		end
 
 		return bytes_copied
+	end
+
+
+	### Add some prettification functions for views
+	helpers do
+
+		# Approximate Time Constants (in seconds)
+		MINUTES = 60
+		HOURS   = 60  * MINUTES
+		DAYS    = 24  * HOURS
+		WEEKS   = 7   * DAYS
+		MONTHS  = 30  * DAYS
+		YEARS   = 365.25 * DAYS
+
+
+		### Return a string describing the amount of time in the given number of
+		### seconds in terms a human can understand easily.
+		def time_delta_string( start_time )
+			seconds = 0
+			if start_time.is_a?( Time )
+				seconds = Time.now - start_time
+			else
+				start = Time.parse( start_time ) or return "some time"
+				seconds = Time.now - start
+			end
+
+			return 'less than a minute' if seconds < 60
+
+			if seconds < 50 * 60
+				return "%d minute%s" % [seconds / 60, seconds/60 == 1 ? '' : 's']
+			end
+
+			return 'about an hour'					if seconds < 90 * MINUTES
+			return "%d hours" % [seconds / HOURS]	if seconds < 18 * HOURS
+			return 'one day' 						if seconds <  1 * DAYS
+			return 'about a day' 					if seconds <  2 * DAYS
+			return "%d days" % [seconds / DAYS] 	if seconds <  1 * WEEKS
+			return 'about a week' 					if seconds <  2 * WEEKS
+			return "%d weeks" % [seconds / WEEKS] 	if seconds <  3 * MONTHS
+			return "%d months" % [seconds / MONTHS] if seconds <  2 * YEARS
+			return "%d years" % [seconds / YEARS]
+		end
+
+
+		# Byte size constants
+		KILOBYTE = 1024
+		MEGABYTE = 1024 ** 2
+		GIGABYTE = 1024 ** 3
+
+		### Return a string describing an amount of data in a human-readable 
+		### byte-suffixed form.
+		def byte_suffix( bytes )
+			bytes = bytes.to_f
+
+			return case
+				when bytes >= GIGABYTE then sprintf( "%0.1fG", bytes / GIGABYTE )
+				when bytes >= MEGABYTE then sprintf( "%0.1fM", bytes / MEGABYTE )
+				when bytes >= KILOBYTE then sprintf( "%0.1fK", bytes / KILOBYTE )
+				else "%db" % [ bytes.ceil ]
+				end
+		end
+
 	end
 
 end # class Gemserver::App

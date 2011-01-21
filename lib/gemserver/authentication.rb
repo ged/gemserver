@@ -2,6 +2,7 @@
 
 require 'treequel'
 require 'rack/auth/basic'
+require 'configurability'
 require 'openssl'
 
 
@@ -18,11 +19,15 @@ module Gemserver::Authentication
 
 	### Return the configured Treequel::Directory for authentication.
 	def ldap
-		if self.options.config && (uri = self.options.config['ldapuri'])
-			@ldap = Treequel.directory( uri )
-		else
-			@ldap = Treequel.directory_from_config
+		if !@ldap
+			if self.options.config && (uri = self.options.config.ldapuri)
+				@ldap = Treequel.directory( uri )
+			else
+				@ldap = Treequel.directory_from_config
+			end
 		end
+
+		return @ldap
 	end
 
 

@@ -62,7 +62,7 @@ function on_upload_drop() {
 function update_progressbar( index, filename, progress ) {
 	var pb = $( "#upload-progress #progress-bar" + index );
 	console.debug( "Updating progress bar: %o", pb );
-	
+
 	pb.find( '.progress-bar-progress' ).
 		css( 'width', progress.toString(10) + '%' );
 	pb.find( '.progress-bar-percent' ).text( progress.toString(10) + '%' );
@@ -78,7 +78,7 @@ function update_progressbar( index, filename, progress ) {
 function update_progressbar_speed( index, filename, speed ) {
 	var pb = $( "#upload-progress #progress-bar" + index );
 	console.debug( "Updating progress bar speed: %o (%s)", pb, speed );
-	
+
 	pb.find( '.progress-bar-speed' ).text( speed.toString(10) + ' Kb/s' );
 }
 
@@ -92,7 +92,7 @@ function update_progressbar_speed( index, filename, speed ) {
  */
 function on_upload_started( i, file, len ) {
 	console.debug( "Upload started for %s (%d of %d dropped)", file.name, i+1, len );
-	
+
 	var pb_id = 'progress-bar' + i.toString(10);
 	var pb_div = $('<div id="' + pb_id + '" class="progress-bar">');
 	$(pb_div).append( '<div class="progress-bar-progress">&nbsp;</div>' );
