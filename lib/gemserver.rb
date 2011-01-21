@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require 'rbconfig'
+require 'rubygems'
 
 # Gemserver namespace module
 module Gemserver
@@ -9,7 +9,7 @@ module Gemserver
 	VERSION = '0.2.0'
 
 	# The path to the gemserver's data directory
-	SYSTEM_DATADIR = Pathname( Config.datadir('gemserver') )
+	SYSTEM_DATADIR = Pathname( Gem.datadir('gemserver') )
 
 	# The path to the directory that contains the gem data
 	DEFAULT_GEMSDIR = SYSTEM_DATADIR + 'gems'

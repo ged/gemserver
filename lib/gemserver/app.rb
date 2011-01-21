@@ -12,6 +12,8 @@ require 'rubygems/indexer'
 
 require 'sinatra/base'
 
+require 'configurability'
+
 require 'gemserver'
 require 'gemserver/authentication'
 require 'gemserver/keystore'

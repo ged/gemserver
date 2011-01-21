@@ -4,7 +4,7 @@ require 'pathname'
 require 'sequel'
 require 'digest/sha1'
 
-require 'gemserver/app' unless defined?( Gemserver::App )
+require 'gemserver' unless defined?( Gemserver )
 
 
 # A simple store for API keys
