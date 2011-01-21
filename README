@@ -1,6 +1,6 @@
 = gemserver
 
-This is an experiemental minimalist Rubygems index and gem server written in
+This is an experimental minimalist Rubygems index and gem server written in
 Sinatra. 
 
 You can check out the current development source with Mercurial like so:
