@@ -1,43 +1,8 @@
 #!/usr/bin/env ruby
 
-require 'rbconfig'
-require 'rack'
-require 'thin'
-require 'pathname'
-require 'configurability'
-require 'configurability/config'
 require 'gemserver'
 
 #$stderr.reopen( $stdout )
 
-bindir = Pathname( __FILE__ ).dirname
-basedir = bindir.parent
-etcdir = basedir + 'etc'
-
-appconfig = basedir + 'config.yml'
-globalconfig = etcdir + 'config.yml'
-
-config = nil
-if ! ARGV.empty?
-	configfile = ARGV.shift
-	config = Configurability::Config.load( configfile )
-elsif appconfig.exist?
-	config = Configurability::Config.load( appconfig )
-elsif globalconfig.exist?
-	config = Configurability::Config.load( globalconfig )
-else
-	config = Configurability::Config.new
-end
-
-Configurability.logger.level = Logger::DEBUG
-Treequel.logger = Configurability.logger
-
-Configurability.configure_objects( config )
-
-Rack::Server.start(
-	:app    => Gemserver::App,
-	:server => 'thin',
-	:config => 'config.ru',
-	:Port   => 9292
-  )
+Gemserver.start( ARGV )
 

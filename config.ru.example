@@ -1,6 +1,0 @@
-#!/usr/bin/env rackup
-
-require 'gemserver'
-
-run Gemserver::App
-

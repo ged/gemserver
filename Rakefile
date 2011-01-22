@@ -25,7 +25,8 @@ hoespec = Hoe.spec 'gemserver' do
 		'sqlite3'         => '~> 1.3',
 	}
 	self.extra_dev_deps.push *{
-		'rspec' => '~> 2.4',
+		'rspec'     => '~> 2.4',
+		'rack-test' => '~> 0.5',
 	}
 
 	self.spec_extras[:licenses] = ["BSD"]
