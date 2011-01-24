@@ -51,7 +51,11 @@ class Gemserver::App < Sinatra::Base
 	### Return the application config.
 	def self::configure( config )
 		set :config, config
-		set :gemsdir, Pathname( config.gemsdir || Gemserver::DEFAULT_GEMSDIR )
+
+		gemsdir = config.respond_to?( :gemsdir ) ?
+			Pathname( config.gemsdir.to_s ) :
+			Gemserver::DEFAULT_GEMSDIR
+		set :gemsdir, gemsdir
 	end
 
 

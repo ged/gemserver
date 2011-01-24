@@ -7,6 +7,7 @@ require 'rack/builder'
 require 'thin'
 require 'sinatra'
 require 'pathname'
+require 'tmpdir'
 require 'configurability'
 require 'configurability/config'
 
@@ -15,16 +16,15 @@ require 'configurability/config'
 module Gemserver
 	extend Configurability
 
+	# Configurability API -- sets the section of the config that the module uses.
 	config_key :rack
+
 
 	# Software version
 	VERSION = '0.2.0'
 
 	# The path to the gemserver's data directory
 	SYSTEM_DATADIR = Pathname( Gem.datadir('gemserver') || 'data/gemserver' )
-
-	# The path to the directory that contains the gem data
-	DEFAULT_GEMSDIR = SYSTEM_DATADIR + 'gems'
 
 	# The name of the regular gems index
 	RELEASE_GEM_INDEXFILE = "specs.%s.gz" % [ Gem.marshal_version ]
@@ -44,8 +44,30 @@ module Gemserver
 	# The default Rack environment
 	DEFAULT_RACK_ENV = 'development'
 
+	# The path to the directory that contains the gem data
+	DEFAULT_GEMSDIR = Pathname( Dir.tmpdir ) + 'uploaded_gems'
+
 	# The name of the config file
 	CONFIGFILE_NAME = 'gemserver.conf'
+
+	# The path to the example config
+	EXAMPLE_CONFIG = Pathname( Gem.datadir('gemserver') || 'data/gemserver' ) +
+		"#{CONFIGFILE_NAME}.example"
+
+	# Configuration defaults
+	CONFIG_DEFAULTS = {
+		:loglevel  => :info,
+		:rack      => {
+			:host     => DEFAULT_HOST,
+			:port     => DEFAULT_PORT,
+			:env      => DEFAULT_RACK_ENV,
+		},
+		:gemserver => {
+			:name     => 'Unconfigured',
+			:gemsdir  => DEFAULT_GEMSDIR,
+			:ldapuri  => 'ldap://localhost/dc=localhost',
+		}
+	}
 
 	# Map log level names
 	LOG_LEVELS = {
@@ -98,7 +120,23 @@ module Gemserver
 
 
 	### Load the configuration and install it
-	def self::load_config( args )
+	def self::load_config( *args )
+		configfile = args.flatten.shift || self.find_standard_config
+
+		if configfile
+			return Configurability::Config.load( configfile, CONFIG_DEFAULTS )
+		else
+			self.log.warn "No configfile; using defaults."
+			return Configurability::Config.new( nil, nil, CONFIG_DEFAULTS )
+		end
+	end
+
+
+	### Find the config file in a standard path and return it.
+	### @return [Pathname] the path to the config, or nil if it wasn't in any of the 
+	### standard places.
+	def self::find_standard_config
+		self.log.debug "Looking for a standard config."
 		bindir  = Pathname( $0 ).dirname
 		basedir = bindir.parent
 		etcdir  = basedir + 'etc'
@@ -108,25 +146,12 @@ module Gemserver
 		appconfig    = Pathname.pwd + CONFIGFILE_NAME
 		globalconfig = etcdir  + CONFIGFILE_NAME
 
-		# Try to find the config in:
-		#   ARGV[0]
-		#   ./gemserver.conf
-		#   (etcdir)/gemserver.conf
-		# Fall back to an empty config if none of those are found.
-		config = nil
-		if ! args.empty?
-			configfile = args.shift
-			config = Configurability::Config.load( configfile )
-		elsif appconfig.exist?
-			config = Configurability::Config.load( appconfig )
-		elsif globalconfig.exist?
-			config = Configurability::Config.load( globalconfig )
-		else
-			$stderr.puts "Couldn't find a config file! Using defaults."
-			config = Configurability::Config.new
-		end
+		return appconfig if appconfig.exist?
+		self.log.debug "  not in #{appconfig}..."
+		return globalconfig if globalconfig.exist?
+		self.log.debug "  not in #{globalconfig}; giving up."
 
-		return config
+		return nil
 	end
 
 
@@ -139,13 +164,14 @@ module Gemserver
 
 
 	### Start the gemserver, parsing the command line options from +args+.
-	def self::start( args )
-		config = self.load_config( args )
+	def self::start( config )
 
 		# Combine all the loggers
 		Configurability.logger = self.logger
 		Treequel.logger = self.logger
-		if config.loglevel && level = LOG_LEVELS[ config.loglevel ]
+		if config.respond_to?( :loglevel )
+			level = LOG_LEVELS[ config.loglevel.to_s ] or
+				raise "unknown loglevel %p" % [ config.loglevel ]
 			self.logger.level = level
 			self.log.debug "Logging level set to: %s" % [ config.loglevel ]
 		end
@@ -153,6 +179,7 @@ module Gemserver
 		# Propagate the configuration to any objects that have configurability
 		Configurability.configure_objects( config )
 
+		# Start the server
         Thin::Server.start( self.host, self.port ) do
 			use Rack::Chunked
 			use Rack::ContentLength
@@ -164,7 +191,6 @@ module Gemserver
 			run Gemserver::App
 		end
 	end
-
 
 end # module Gemserver
 

@@ -112,7 +112,11 @@ describe Gemserver::App do
 		    @browser.get '/'
 
 		    @browser.last_response.should be_ok()
-			@browser.last_response.content_type.should == 'text/html;charset=utf-8'
+			if RUBY_VERSION >= '1.9.0'
+				@browser.last_response.content_type.should == 'text/html;charset=utf-8'
+			else
+				@browser.last_response.content_type.should == 'text/html'
+			end
 		    @browser.last_response.body.should =~ /released gems/i
 			@browser.last_response.body.should include( GEMDATA[0][:name], GEMDATA[1][:name] )
 			@browser.last_response.body.should include( GEMDATA[0][:version].to_s, GEMDATA[1][:version].to_s )
@@ -124,7 +128,11 @@ describe Gemserver::App do
 		    @browser.get '/gems'
 
 		    @browser.last_response.should be_ok()
-			@browser.last_response.content_type.should == 'text/html;charset=utf-8'
+			if RUBY_VERSION >= '1.9.0'
+				@browser.last_response.content_type.should == 'text/html;charset=utf-8'
+			else
+				@browser.last_response.content_type.should == 'text/html'
+			end
 		    @browser.last_response.body.should_not =~ /<head>/i
 		    @browser.last_response.body.should =~ /released gems/i
 			@browser.last_response.body.should include( GEMDATA[0][:name], GEMDATA[1][:name] )

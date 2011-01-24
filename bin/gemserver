@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 
+require 'rubygems'
 require 'gemserver'
 
-#$stderr.reopen( $stdout )
-
-Gemserver.start( ARGV )
+config = Gemserver.load_config( ARGV )
+Gemserver.start( config )
 

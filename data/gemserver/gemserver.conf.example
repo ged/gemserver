@@ -1,10 +1,10 @@
-loglevel: debug
+loglevel: info
 rack:
   host: 127.0.0.1
-  port: 9392
+  port: 9292
   env: development
 gemserver:
-  name: Acme
-  gemsdir: /usr/local/var/rubygems
-  ldapuri: "ldap://ldap.acme.com/dc=acme,dc=com"
+  name: Unconfigured
+  gemsdir: /tmp/uploaded_gems
+  ldapuri: "ldap://localhost/dc=localhost"
 
