@@ -53,7 +53,7 @@ module Gemserver::Authentication
 	def authenticate( username, password )
 		username = self.validate_username( username )
 		user = self.ldap.base.
-			filter( :objectClass => :inetOrgPerson ).
+			filter( :objectClass => :posixAccount ).
 			filter( :uid => username ).first
 
 		unless user
