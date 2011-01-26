@@ -72,7 +72,7 @@ describe Gemserver::Keystore do
 
 		it "can generate a secure API key" do
 			key = @keystore.make_apikey( TEST_USERNAME, TEST_PASSWORD )
-			key.should =~ /^\w{40}$/
+			key.should =~ /^[[:graph:]]{40}$/
 		end
 	end
 
