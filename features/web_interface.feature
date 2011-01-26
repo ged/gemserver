@@ -4,7 +4,11 @@ Feature: Web interface
 	As a repository admin
 	I want to be able to interact with the server through a web browser
 	
-	Scenario: a brand-new empty gem repository
+	Scenario: an empty gem repository
+		Given a gem repository with no gems in it
+		When I fetch the index page
+		Then I see a message describing the empty repository
+			And instructions on how to upload a gem
 
 	Scenario: a gem repository with 2 gems
 
@@ -14,6 +18,6 @@ Feature: Web interface
 
 	Scenario: a gem repository with a prerelease version and a regular version of a gem
 	
-	
+
 
 	
