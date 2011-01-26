@@ -16,6 +16,7 @@ require 'configurability'
 
 require 'gemserver'
 require 'gemserver/authentication'
+require 'gemserver/mixins'
 require 'gemserver/keystore'
 
 
@@ -23,7 +24,8 @@ include ERB::Util
 
 class Gemserver::App < Sinatra::Base
 	extend Configurability
-	include Gemserver::Authentication
+	include Gemserver::Authentication,
+	        Gemserver::Loggable
 
 	# Configurability API -- register for the 'gemserver' section of the config
 	config_key :gemserver
@@ -102,17 +104,17 @@ class Gemserver::App < Sinatra::Base
 	### POST /api/v1/gems
 	### Support for 'gem push'
 	post '/api/v1/gems' do
-		$stderr.puts "Gem push: "
+		self.log.info "Gem push: "
 
 		# Get the token, or respond with a 401 if there isn't one
 		apikey = self.env['HTTP_AUTHORIZATION']
 		unless apikey && self.keystore.apikey_exists?( apikey )
-			$stderr.puts "Bad/missing API key: %p" % [ apikey ]
+			self.log.error "Bad/missing API key: %p" % [ apikey ]
 			self.response['WWW-Authenticate'] = %(apikey realm="gemserver")
 			throw :halt, [ 401, 'Authorization required' ]
 		end
 
-		$stderr.puts "Accepted API key."
+		self.log.info "Accepted API key."
 		io = request.body
 		# io = request.body.instance_variable_get( :@input )
 		# $stderr.puts "  unwrapped the IO from the half-assed rack wrapper: %p" % [ io ]
@@ -137,6 +139,7 @@ class Gemserver::App < Sinatra::Base
 
 	### Upload a gem
 	post '/upload' do
+		self.log.info "Gem upload: "
 		self.require_authentication
 		tmpfile = name = nil
 
@@ -145,6 +148,7 @@ class Gemserver::App < Sinatra::Base
 			(tmpfile = params[:gem][:tempfile]) &&
 			(name    = params[:gem][:filename])
 
+			self.log.error "Upload with no 'gem' field."
 			status 400
 			return "Bad request".dump
 		end
@@ -204,16 +208,16 @@ class Gemserver::App < Sinatra::Base
 
 		# Make sure the file is a valid gem
 		if io.respond_to?( :string )
-			$stderr.puts "Reading gem from memory"
+			self.log.debug "Reading gem from memory"
 			pkg = Gem::Format.from_io( io )
 			io = StringIO.new( io.string )
 		else
-			$stderr.puts "Reading gem from tmpfile: %s" % [ io.path ]
+			self.log.debug "Reading gem from tmpfile: %s" % [ io.path ]
 			pkg = Gem::Format.from_file_by_path( io.path )
 		end
 
 		# Figure out where it's going to be written
-		$stderr.puts "Handling upload for gem: %s (v%s)" % [ pkg.spec.name, pkg.spec.version ]
+		self.log.info "Handling upload for gem: %s (v%s)" % [ pkg.spec.name, pkg.spec.version ]
 		gemname = "%s-%s.gem" % [ pkg.spec.name, pkg.spec.version ]
 		gempath = self.options.gemsdir + 'gems' + gemname
 
@@ -226,16 +230,16 @@ class Gemserver::App < Sinatra::Base
 		gempath.open( File::EXCL|File::CREAT|File::WRONLY, 0644 ) do |gemfile|
 			totalbytes = copy_io( io, gemfile )
 		end
-		$stderr.puts "  done writing (%s)." % [ byte_suffix(totalbytes) ]
-		$stderr.puts "  gem says it's: %s" % [ byte_suffix(gempath.size) ]
+		self.log.debug "  done writing (%s)." % [ byte_suffix(totalbytes) ]
+		self.log.debug "  gem says it's: %s" % [ byte_suffix(gempath.size) ]
 
 		# Re-build the indexes
 		self.indexer.generate_index
 
 		return pkg.spec
 	rescue => err
-		$stderr.puts "Corrupted gem uploaded: %s: %s" % [ err.class.name, err.message ]
-		$stderr.puts "  " + err.backtrace.join( "\n  " )
+		self.log.error "Corrupted gem uploaded: %s: %s" % [ err.class.name, err.message ]
+		self.log.debug "  " + err.backtrace.join( "\n  " )
 		throw :halt, [400, "Bad request"]
 	end
 

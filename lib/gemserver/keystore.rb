@@ -5,10 +5,12 @@ require 'sequel'
 require 'digest/sha1'
 
 require 'gemserver' unless defined?( Gemserver )
+require 'gemserver/mixins'
 
 
 # A simple store for API keys
 class Gemserver::Keystore
+	include Gemserver::Loggable
 
 	# The name of the database file to store keys in
 	DBFILE_NAME = 'gemserver.db'
@@ -16,11 +18,18 @@ class Gemserver::Keystore
 	# The name of the API keys table
 	KEYTABLE = :apikeys
 
+
 	### Create or load the keystore in the given +datadir+.
-	def initialize( datadir=Gemserver::DEFAULT_GEMSDIR )
-		datadir = Pathname( datadir )
-		dbfile = datadir + DBFILE_NAME
-		@db = Sequel.sqlite( dbfile.to_s )
+	def initialize( datadir=nil )
+		if datadir
+			datadir = Pathname( datadir )
+			dbfile = datadir + DBFILE_NAME
+			@db = Sequel.sqlite( dbfile.to_s )
+		else
+			self.log.warn "No datadir: Using in-memory keystore."
+			@db = Sequel.sqlite
+		end
+
 		self.install_schema unless @db.table_exists?( :apikeys )
 
 		@keytable = @db[ KEYTABLE ]
@@ -30,6 +39,10 @@ class Gemserver::Keystore
 	######
 	public
 	######
+
+	# The keystore's Sequel::Database object
+	attr_reader :db
+
 
 	### Get the apikey for the user with the specified +username+.
 	def get_apikey( username )

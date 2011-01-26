@@ -18,5 +18,5 @@ lib/gemserver.rb
 lib/gemserver/app.rb
 lib/gemserver/authentication.rb
 lib/gemserver/keystore.rb
-spec/gemserver/app_spec.rb
+spec/gemserver_spec.rb
 spec/lib/helpers.rb

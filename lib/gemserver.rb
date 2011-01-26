@@ -116,6 +116,7 @@ module Gemserver
 
 	require 'gemserver/app'
 	require 'gemserver/authentication'
+	require 'gemserver/mixins'
 	require 'gemserver/keystore'
 
 
