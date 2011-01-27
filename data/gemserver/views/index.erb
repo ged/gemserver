@@ -1,37 +1,48 @@
 
 <% if gemindex.length.nonzero? %>
-  <h2>Released Gems</h2>
+	<h2>Released Gems</h2>
 
-  <table id="released-gemindex" class="gemindex">
-    <thead>
-      <tr>
-        <th class="odd">Name</th>
-        <th class="even">Version</th>
-        <th class="odd">Description</th>
-      </tr>
-    </thead>
+	<table id="released-gemindex" class="gemindex">
+		<thead>
+			<tr>
+				<th class="odd">Name</th>
+				<th class="even">Version</th>
+				<th class="odd">Description</th>
+			</tr>
+		</thead>
 
-    <tbody>
-    <% gemindex.latest_specs.each_with_index do |gemspec, i| %>
-    <% if (i % 2).nonzero? %>
-      <tr class="odd">
-    <% else %>
-      <tr class="even">
-    <% end %>
-        <td class="gem-name odd">
-          <a href="/details/<%= gemspec.name %>"><%= h gemspec.name %></a>
-        </td>
-        <td class="gem-version even"><%= gemspec.version %></td>
-        <td class="gem-description odd"><%= gemspec.summary %></td>
-      </tr>
-    <% end %>
-    </tbody>
-  </table>
+		<tbody>
+		<% gemindex.latest_specs.each_with_index do |gemspec, i| %>
+		<% if (i % 2).nonzero? %>
+			<tr class="odd">
+		<% else %>
+			<tr class="even">
+		<% end %>
+				<td class="gem-name odd">
+					<a href="/details/<%= gemspec.name %>"><%= h gemspec.name %></a>
+				</td>
+				<td class="gem-version even"><%= gemspec.version %></td>
+				<td class="gem-description odd"><%= gemspec.summary %></td>
+			</tr>
+		<% end %>
+		</tbody>
+	</table>
 
-  <p>To upload more, drag .gem files into this window.</p>
 <% else %>
 
-  <p>No gems are published. To upload some, drag .gem files into this window.</p>
+  <p>No gems are published.</p>
 
 <% end %>
+
+<section id="uploadform">
+	<form action="/upload" method="POST" accept-charset="utf-8" enctype="multipart/form-data">
+		<label for="gem-upload-field">Gems to upload</label>
+		<input type="file" multiple="true" name="gem" value="" id="gem-upload-field" />
+
+		<p><input type="submit" value="Upload &rarr;" /></p>
+	</form>
+
+	<table class="uploaded-files"></table>
+	<table class="download-files"></table>
+</section>
 

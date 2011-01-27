@@ -118,7 +118,7 @@ class Gemserver::App < Sinatra::Base
 		io = request.body
 		# io = request.body.instance_variable_get( :@input )
 		# $stderr.puts "  unwrapped the IO from the half-assed rack wrapper: %p" % [ io ]
-		gemspec = handle_gem_upload( io )
+		gemspec, bytes = self.handle_gem_upload( io )
 
 		content_type( 'text/plain' )
 		return "Registered %s v%s." % [ gemspec.name, gemspec.version ]
@@ -153,10 +153,14 @@ class Gemserver::App < Sinatra::Base
 			return "Bad request".dump
 		end
 
-		gemspec = handle_gem_upload( tmpfile )
+		gemspec, bytes = self.handle_gem_upload( tmpfile )
 
 		content_type( 'application/javascript' )
-		return YAML.load( gemspec.to_yaml ).to_json
+		return {
+			'name' => "%s (%s)" % [ gemspec.name, gemspec.version.to_s ],
+			'type' => 'application/x-rubygem',
+			'size' => bytes,
+		}.to_json
 	end
 
 
@@ -236,7 +240,7 @@ class Gemserver::App < Sinatra::Base
 		# Re-build the indexes
 		self.indexer.generate_index
 
-		return pkg.spec
+		return pkg.spec, totalbytes
 	rescue => err
 		self.log.error "Corrupted gem uploaded: %s: %s" % [ err.class.name, err.message ]
 		self.log.debug "  " + err.backtrace.join( "\n  " )
