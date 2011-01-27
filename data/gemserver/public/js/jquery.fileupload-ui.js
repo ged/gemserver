@@ -27,9 +27,9 @@
         this.dropZone = container;
         this.progressSelector = '.file-upload-progress div';
         this.cancelSelector = '.file-upload-cancel div';
-        this.cssClassSmall = 'file_upload_small';
-        this.cssClassLarge = 'file_upload_large';
-        this.cssClassHighlight = 'file_upload_highlight';
+        this.cssClassSmall = 'file-upload-small';
+        this.cssClassLarge = 'file-upload-large';
+        this.cssClassHighlight = 'file-upload-highlight';
         this.dropEffect = 'highlight';
         this.uploadTable = this.downloadTable = $();
         

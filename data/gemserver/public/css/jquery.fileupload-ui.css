@@ -1,4 +1,4 @@
-.file_upload {
+.file-upload {
   position: relative;
   overflow: hidden;
   direction: ltr;
@@ -16,7 +16,7 @@
   border: 1px solid limegreen;
 }
 
-.file_upload_small {
+.file-upload-small {
   width: 200px;
   height: 30px;
   line-height: 30px;
@@ -25,7 +25,7 @@
   border: 1px solid limegreen;
 }
 
-.file_upload_large {
+.file-upload-large {
   width: 100%;
   height: 150px;
   line-height: 150px;
@@ -34,11 +34,11 @@
   border: 1px solid limegreen;
 }
 
-.file_upload_highlight {
+.file-upload-highlight {
   background: lawngreen;
 }
 
-.file_upload input {
+.file-upload input {
   position: absolute;
   top: 0;
   right: 0;
@@ -52,7 +52,7 @@
   z-index: 2;
 }
 
-.file_upload iframe, .file_upload button {
+.file-upload iframe, .file-upload button {
   display: none;
 }
 

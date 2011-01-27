@@ -22,8 +22,8 @@
             uploadForm = (container.is('form') ? container : container.find('form').first()),
             fileInput = uploadForm.find('input:file').first(),
             settings = {
-                namespace: 'file_upload',
-                cssClass: 'file_upload',
+                namespace: 'file-upload',
+                cssClass: 'file-upload',
                 dragDropSupport: true,
                 dropZone: container,
                 url: uploadForm.attr('action'),
@@ -405,7 +405,7 @@
                 
         destroy : function (namespace) {
             return this.each(function () {
-                namespace = namespace ? namespace : 'file_upload';
+                namespace = namespace ? namespace : 'file-upload';
                 var fileUpload = $(this).data(namespace);
                 if (fileUpload) {
                     fileUpload.destroy();
