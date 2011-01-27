@@ -65,7 +65,7 @@ module Gemserver
 		:gemserver => {
 			:name     => 'Unconfigured',
 			:gemsdir  => DEFAULT_GEMSDIR,
-			:ldapuri  => 'ldap://localhost/dc=localhost',
+			:ldapuri  => nil, # Use ldap.conf values
 		}
 	}
 
@@ -87,7 +87,7 @@ module Gemserver
 
 	### Logging
 	@default_logger = Logger.new( $stderr )
-	@default_logger.level = $DEBUG ? Logger::DEBUG : Logger::WARN
+	@default_logger.level = ($DEBUG||$VERBOSE) ? Logger::DEBUG : Logger::WARN
 
 	@logger = @default_logger
 
@@ -125,6 +125,7 @@ module Gemserver
 		configfile = args.flatten.shift || self.find_standard_config
 
 		if configfile
+			self.log.info "Loading config from: %s" % [ configfile ]
 			return Configurability::Config.load( configfile, CONFIG_DEFAULTS )
 		else
 			self.log.warn "No configfile; using defaults."
@@ -166,6 +167,9 @@ module Gemserver
 
 	### Start the gemserver, parsing the command line options from +args+.
 	def self::start( config )
+		# Squelch some warnings about undefined instance variables
+		Thin::Logging.silent = false
+		Thin::Logging.trace = false
 
 		# Combine all the loggers
 		Configurability.logger = self.logger
@@ -184,8 +188,6 @@ module Gemserver
         Thin::Server.start( self.host, self.port ) do
 			use Rack::Chunked
 			use Rack::ContentLength
-			use Rack::CommonLogger, $stderr if
-				Gemserver.env == 'development' || Gemserver.env == 'production'
 			use Rack::ShowExceptions if Gemserver.env == 'development'
 			use Rack::Lint if Gemserver.env == 'development'
 
