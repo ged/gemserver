@@ -3,11 +3,15 @@
 require 'treequel'
 require 'rack/auth/basic'
 
+require 'gemserver' unless defined?( Gemserver )
+require 'gemserver/mixins'
+
 
 # HTTP basic authentication wrapper for Sinatra, stolen and reworked
 # a little from:
 #    http://www.gittr.com/index.php/archive/sinatra-basic-authentication-selectively-applied/
 module Gemserver::Authentication
+	include Gemserver::Loggable
 
 	### Wrap the request in a basic authentication adapter.
 	def auth
@@ -23,6 +27,8 @@ module Gemserver::Authentication
 			else
 				@ldap = Treequel.directory_from_config
 			end
+
+			self.log.info "Authentication will use: %s" % [ @ldap.uri ]
 		end
 
 		return @ldap
@@ -57,17 +63,17 @@ module Gemserver::Authentication
 			filter( :uid => username ).first
 
 		unless user
-			$stderr.puts "Authentication failed: no such user %p" % [ username ]
+			self.log.error "Authentication failed: no such user %p" % [ username ]
 			return false
 		end
 
 		self.ldap.bind( user, password ) # raises LDAP::ResultError if it fails
-		$stderr.puts "Authenticated %p (%s)" % [ username, user.dn ]
+		self.log.info "Authenticated %p (%s)" % [ username, user.dn ]
 
 		return true
 
 	rescue LDAP::ResultError => err
-		$stderr.puts "  authentication failed for %p (%p: %s)" %
+		self.log.error "  authentication failed for %p (%p: %s)" %
 			[ user || username, err.class, err.message ]
 		return false
 	end
