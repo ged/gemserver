@@ -34,15 +34,19 @@
 
 <% end %>
 
-<section id="uploadform">
+<section id="dropzone">
+	<img src="/images/upload-arrow.png" width="256" height="256" alt="Upload!" />
+</section>
+
+<section id="upload">
 	<form action="/upload" method="POST" accept-charset="utf-8" enctype="multipart/form-data">
-		<label for="gem-upload-field">Gems to upload</label>
+		<label for="gem-upload-field">Upload Gems</label>
 		<input type="file" multiple="true" name="gem" value="" id="gem-upload-field" />
 
-		<input type="submit" value="Upload &rarr;" />
+		<input type="submit" value="Upload &rarr;" id="gem-upload-button" />
 	</form>
 
-	<table class="uploaded-files"></table>
-	<table class="download-files"></table>
+	<div id="upload-progress">
+	</div>
 </section>
 
