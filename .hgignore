@@ -5,3 +5,4 @@ data/gems/
 ChangeLog
 pkg/
 ^release\.notes$
+^doc/

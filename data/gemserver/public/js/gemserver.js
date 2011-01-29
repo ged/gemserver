@@ -10,38 +10,16 @@
 // Limit reloads to every 2s
 const RELOAD_DELAY = 1000;
 
+var EnterCounter = { doc: 0, drag: 0 };
 var UploadCounter = 0;
 var ReloadTimeout = null;
 
-// function on_upload_dragenter( event ) {
-// 	console.debug( "DragEnter event: %o", event );
-// 	$('#dropzone').addClass('targeted');
-// }
-// 
-// function on_upload_dragleave( event ) {
-// 	console.debug( "DragLeave event: %o", event );
-// 	if ( UploadCounter == 0 )
-// 		$('#dropzone').removeClass('targeted');
-// }
-// 
-// function on_upload_docenter( event ) {
-// 	console.debug( "DocEnter event: %o", event );
-// 	$('#upload').addClass('targeted');
-// }
-// 
-// function on_upload_docleave( event ) {
-// 	console.debug( "DocLeave event: %o", event );
-// 	if ( UploadCounter == 0 )
-// 		$('#upload').removeClass('targeted');
-// }
-// 
-// function on_upload_drop( event ) {
-// 	console.debug( "Drop event: %o", event );
-// 	$('#upload').addClass('uploading');
-// }
+const Templates = {
+	upload_row: null
+};
 
-/* Provide console simulation for firebug-less environments */
-if (!("console" in window) || !("firebug" in console)) {
+/* Provide console simulation for firebug/webinspector-less environments */
+if (!("console" in window) || !("groupEnd" in console)) {
     var names = ["log", "debug", "info", "warn", "error", "assert", "dir", "dirxml",
     "group", "groupEnd", "time", "timeEnd", "count", "trace", "profile", "profileEnd"];
 
@@ -50,34 +28,75 @@ if (!("console" in window) || !("firebug" in console)) {
         window.console[names[i]] = function() {};
 }
 
+function on_upload_dragenter( event ) {
+	EnterCounter.drag += 1;
+	console.debug( "DragEnter event (%d): %o", EnterCounter.drag, event );
+	$('#dropzone').addClass('targeted');
+}
+
+function on_upload_dragleave( event ) {
+	EnterCounter.drag -= 1;
+	console.debug( "DragLeave event (%d): %o", EnterCounter.drag, event );
+	if ( EnterCounter.drag == 0 )
+		$('#dropzone').removeClass('targeted');
+}
+
+function on_upload_docenter( event ) {
+	EnterCounter.doc += 1;
+	console.debug( "DocEnter event (%d): %o", EnterCounter.doc, event );
+	$('#dropzone').addClass('dragging');
+}
+
+function on_upload_docleave( event ) {
+	EnterCounter.doc -= 1;
+	console.debug( "DocLeave event (%d): %o", EnterCounter.doc, event );
+	if ( EnterCounter.doc == 0 )
+		$('#upload').removeClass('dragging');
+}
+
+function on_upload_drop( event ) {
+	console.debug( "Drop event: %o", event );
+	$('#upload').addClass('uploading');
+}
+
+function build_upload_row( files, index ) {
+	var file = files[ index ];
+	var tmpl = Templates.upload_row.clone();
+	console.debug( "Building an upload row for file %d of %d: %d", files.length, index, file.name );
+
+	tmpl.find( '.filename' ).html( file.name );
+
+	return tmpl;
+}
+
+function hasDragAndDrop() {
+	return 'draggable' in document.createElement('span');
+}
+function hasFileAPI() {
+	return typeof FileReader != 'undefined';
+}
 
 function hook_fileupload() {
 	console.debug( "hooking fileupload" );
 
-    $('#uploadform form').fileUploadUI({
-        uploadTable: $('.uploaded-files'),
-        downloadTable: $('.download-files'),
-        buildUploadRow: function (files, index) {
-            var file = files[index];
-            return $(
-                '<tr>' +
-                '<td>' + file.name + '</td>' +
-                '<td class="file-upload-progress"><div></div></td>' +
-                '<td class="file-upload-cancel">' +
-                '<div class="ui-state-default ui-corner-all ui-state-hover" title="Cancel">' +
-                '<span class="ui-icon ui-icon-cancel">Cancel</span>' +
-                '</div>' +
-                '</td>' +
-                '</tr>'
-            );
-        },
-        buildDownloadRow: function (file) {
-            return $(
-                '<tr><td>' + file.name + '</td></tr>'
-            );
-        }
-
+    $('#upload form').fileUploadUI({
+		uploadTable: $('#upload table.uploads'),
+		buildUploadRow: build_upload_row,
+		dropZone: $('#dropzone'),
+        progressSelector: '.upload-row td.progress',
+        cancelSelector: '.upload-row td.cancel',
+		onDocumentDragEnter: on_upload_docenter,
+		onDocumentDragLeave: on_upload_docleave,
+		onDragEnter: on_upload_dragenter,
+		onDragLeave: on_upload_dragleave,
+		onDrop: on_upload_drop
     });
+
+	if ( hasDragAndDrop() && hasFileAPI() ) {
+		console.debug( "  has drag-and-drop and the File API" );
+		$('#upload p').
+			html( "Select one or more gems to upload, or drag and drop them into this window.");
+	}
 }
 
 
@@ -88,7 +107,12 @@ function handle_ajax_error( event, xhr, opts, err ) {
 		dialog({ title: "AJAX Error" });	
 }
 
+function extract_templates() {
+	Templates.upload_row = $('#upload table.uploads tr.upload-row').remove();
+}
+
 $(document).ready( function() {
+	extract_templates();
 	hook_fileupload();
 	$('#error-notice').ajaxError( handle_ajax_error );
 });

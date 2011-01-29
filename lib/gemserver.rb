@@ -63,7 +63,7 @@ module Gemserver
 			:env      => DEFAULT_RACK_ENV,
 		},
 		:gemserver => {
-			:name     => 'Unconfigured',
+			:name     => nil, # Defaults to the hostname
 			:gemsdir  => DEFAULT_GEMSDIR,
 			:ldapuri  => nil, # Use ldap.conf values
 		}
