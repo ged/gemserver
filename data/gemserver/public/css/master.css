@@ -11,7 +11,7 @@
  *
  */
 
-@import url(overcast/jquery-ui-1.8.9.custom.css);
+/*@import url(overcast/jquery-ui-1.8.9.custom.css);*/
 
 /* @group Entity styles */
 
@@ -225,11 +225,12 @@ body > nav ul {
 }
 
 body > footer {
+	color: #888;
+	clear: both;
 	font-size: 0.8em;
 	margin: 0;
-	position: absolute;
-	bottom: 1em;
-	width: 95%;
+	position: relative;
+	margin-top: 3em;
 }
 
 body > footer p {
@@ -259,17 +260,25 @@ section#upload {
 	border-radius: 1em
 }
 
+section#upload p {
+	text-align: center;
+	font-size: 0.9em;
+	color: #666;
+	margin-bottom: 0;
+}
 section#upload label {
 	color: #666;
 	font-size: 1.2em;
 	padding: 0 0.5em;
 }
+
 section#upload input[type=file] {
 	background: #eee;
 	border-radius: 1em;
 	width: 60%;
 }
 
+button,
 section#upload input[type=submit] {
 	-moz-border-radius: 5px;
 	-webkit-border-radius: 5px;
@@ -293,6 +302,7 @@ section#upload input[type=submit] {
 
 }
 
+button:hover,
 section#upload input[type=submit]:hover {
 	background:rgba(240,240,240,1);
 	background: -webkit-gradient( linear,
@@ -307,7 +317,10 @@ section#upload input[type=submit]:hover {
 	);
 }
 
-button:active, button:focus {
+button:active,
+button:focus,
+section#upload input[type=submit]:active,
+section#upload input[type=submit]:focus {
 	background: -webkit-gradient( linear,
 		0% 100%, 
 		0% 0%,
@@ -320,25 +333,37 @@ button:active, button:focus {
 	);
 }
 
-button:disabled {
+button:disabled,
+section#upload input[type=submit]:disabled {
 	color:rgba(0,0,0,0.4);
 	text-shadow:1px 1px 0px rgba(255,255,255,0.5);
 	background:rgba(220,220,220,1);
 }
 
-section#upload.targeted {
+section#upload table.uploads {
+	display: none;
+	background: #eee;
+	width: 80%;
+	font-size: 0.8em;
+}
+section#upload.uploading table.uploads {
 	display: block;
 }
-
-section#upload.uploading {
-	display: block;
+section#upload table.uploads tbody {
+	padding: 0;
+}
+section#upload table.uploads td {
+	padding: 0 4px;
+}
+section#upload table.uploads td.cancel {
+	width: 10%;
 }
 
 #dropzone {
 	display: none;
 	position: absolute;
 	top: 35%;
-	left: 35%%;
+	left: 35%;
 	opacity: 0.5;
 	border: 3px dashed rgba( 85,85,85, 0.4 );
 	border-radius: 35px;
@@ -356,6 +381,10 @@ section#upload.uploading {
 		rgba(25,25,25, 0.25));
 }
 
+#dropzone.dragging {
+	display: block;
+}
+
 #dropzone.targeted {
 	opacity: 1.0;
 }
@@ -364,54 +393,6 @@ section#upload.uploading {
 	display: none;
 }
 
-section#upload .progress-bar {
-	color: white;
-	text-shadow: 0px 0px 2px #333;
-	position: relative;
-	font-size: 10px;
-	vertical-align: top;
-	width: 300px;
-	height: 14px;
-	background-color: rgba(240, 240, 240, 0.9);
-	margin: 2px auto;
-	border: 1px solid #999;
-	-webkit-box-shadow: 1px 1px 3px rgba( 25,25,25, 0.5 );
-}
-
-.progress-bar-progress {
-	background-color: #6c8c22;
-	background-image: -webkit-gradient( linear, 0 0, 0 100%,
-		color-stop( 0.0, rgba(255,255,255, 0.25) ),
-		color-stop( 0.4, rgba(  0,  0,  0, 0.35) ),
-		color-stop( 1.0, rgba(255,255,255, 0.15) )
-	 );
-	background-image: -moz-linear-gradient( -90deg,
-		rgba(255,255,255, 0.15),
-		rgba(  0,  0,  0, 0.35) 40%,
-		rgba(255,255,255, 0.15)
-	 );
-	width: 0%;
-	height: 12px;
-	margin: 1px 0px;
-}
-
-.progress-bar-filename {
-	position: absolute;
-	top: -3px;
-	left: 1em;
-}
-
-.progress-bar-percent {
-	position: absolute;
-	top: -3px;
-	left: 140px;
-}
-
-.progress-bar-speed {
-	position: absolute;
-	top: -3px;
-	right: 1em;
-}
 
 aside#error-notice {
 	position: absolute;

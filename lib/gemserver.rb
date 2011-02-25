@@ -21,7 +21,10 @@ module Gemserver
 
 
 	# Software version
-	VERSION = '0.2.0'
+	VERSION = '0.3.0'
+
+	# Software revision
+	REVISION = %q$Revision$
 
 	# The path to the gemserver's data directory
 	SYSTEM_DATADIR = Pathname( Gem.datadir('gemserver') || 'data/gemserver' )
@@ -80,6 +83,12 @@ module Gemserver
 	LOG_LEVEL_NAMES = LOG_LEVELS.invert.freeze
 
 
+	### 
+	class UploadFailed < RuntimeError
+		
+	end
+
+
 	# Rack configuration values
 	@host = DEFAULT_HOST
 	@port = DEFAULT_PORT
@@ -120,6 +129,15 @@ module Gemserver
 	require 'gemserver/keystore'
 
 
+	### Get the Gemserver version.
+	### @return [String] the library's version
+	def self::version_string( include_buildnum=false )
+		vstring = "%s %s" % [ self.name, VERSION ]
+		vstring << " (build %s)" % [ REVISION[/: ([[:xdigit:]]+)/, 1] || '0' ] if include_buildnum
+		return vstring
+	end
+
+
 	### Load the configuration and install it
 	def self::load_config( *args )
 		configfile = args.flatten.shift || self.find_standard_config
@@ -136,7 +154,7 @@ module Gemserver
 
 	### Find the config file in a standard path and return it.
 	### @return [Pathname] the path to the config, or nil if it wasn't in any of the 
-	### standard places.
+	###     standard places.
 	def self::find_standard_config
 		self.log.debug "Looking for a standard config."
 		bindir  = Pathname( $0 ).dirname

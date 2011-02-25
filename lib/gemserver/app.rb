@@ -22,11 +22,11 @@ require 'gemserver/mixins'
 require 'gemserver/keystore'
 
 
-include ERB::Util
-
+### The Gemserver application object
 class Gemserver::App < Sinatra::Base
 	extend Configurability
-	include Gemserver::Authentication,
+	include ERB::Util,
+	        Gemserver::Authentication,
 	        Gemserver::Loggable
 
 	# Configurability API -- register for the 'gemserver' section of the config
