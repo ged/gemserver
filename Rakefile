@@ -17,6 +17,7 @@ hoespec = Hoe.spec 'gemserver' do
 
 	self.extra_deps.push *{
 		'treequel'        => '~> 1.3',
+		'builder'         => '~> 3.0',
 		'configurability' => '~> 1.0',
 		'sinatra'         => '~> 1.0',
 		'rack'            => '~> 1.2',
