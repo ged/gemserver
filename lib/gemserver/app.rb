@@ -8,6 +8,7 @@ require 'yaml'
 require 'socket'
 
 require 'rubygems'
+require 'rubygems/user_interaction'
 require 'rubygems/indexer'
 
 require 'sinatra/base'

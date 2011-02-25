@@ -6,3 +6,4 @@ ChangeLog
 pkg/
 ^release\.notes$
 ^doc/
+^\.yardoc/
