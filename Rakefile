@@ -41,6 +41,9 @@ hoespec = Hoe.spec 'gemserver' do
 	self.rdoc_locations << "deveiate:/usr/local/www/public/code/#{remote_rdoc_dir}"
 end
 
+# Remove the .gemtest file until this is gem-testers ready
+hoespec.spec.files.delete( '.gemtest' )
+
 ENV['VERSION'] ||= hoespec.spec.version.to_s
 
 # Ensure the specs pass before checking in

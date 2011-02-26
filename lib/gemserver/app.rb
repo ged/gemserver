@@ -117,9 +117,9 @@ class Gemserver::App < Sinatra::Base
 		end
 
 		self.log.info "Accepted API key."
-		io = request.body
-		# io = request.body.instance_variable_get( :@input )
-		# $stderr.puts "  unwrapped the IO from the half-assed rack wrapper: %p" % [ io ]
+		# io = request.body
+		io = request.body.instance_variable_get( :@input )
+		self.log.debug "  unwrapped the IO from the half-assed rack wrapper: %p" % [ io ]
 		gemspec, bytes = self.handle_gem_upload( io )
 
 		content_type( 'text/plain' )
