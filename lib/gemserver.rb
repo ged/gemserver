@@ -45,7 +45,7 @@ module Gemserver
 	DEFAULT_PORT = 9292
 
 	# The default Rack environment
-	DEFAULT_RACK_ENV = 'development'
+	DEFAULT_RACK_ENV = 'production'
 
 	# The path to the directory that contains the gem data
 	DEFAULT_GEMSDIR = Pathname( Dir.tmpdir ) + 'uploaded_gems'

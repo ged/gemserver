@@ -4,11 +4,23 @@
 
 ## Description
 
-This is an experimental minimalist Rubygems index and gem server for 
-serving private gems.
+This is an experimental minimalist Rubygems index and gem server for deploying private gems.
 
-It authenticates against an LDAP server, but it should be fairly easy
-to replace the authentication bits with something different.
+It authenticates against an LDAP server, but it should be fairly easy to replace the authentication bits with something different.
+
+Some notable features:
+
+* Serves gems and gem indexes, just like rubygems.org
+* Supports uploading via 'gem push'
+* Integrates with your LDAP directory for authentication
+* Spiffy web interface which supports drag-and-drop, multi-file uploads for 
+  modern browsers, and degrades into a simpler upload form for older browsers.
+
+Caveats:
+
+* Not designed or tested in high-traffic situations
+* Not super-configurable; assumes you have an environment similar to ours or 
+  are willing to hack it a bit
 
 
 ## Installation
@@ -16,22 +28,30 @@ to replace the authentication bits with something different.
     gem install gemserver
 
 
+## Running It
+
+The gem installs a 'gemserver' binary, which can be run out of the box with no
+configuration to test out the software, provided the machine it's running on
+has LDAP authentication configured correctly. It runs on all interfaces on
+port 9292, stores its gems under a temporary directory, and keeps an in-memory
+authtoken database.
+
+Should you wish to run it in a permanent fashion, you'll want to create a
+`gemserver.conf` file in the directory you wish to run it from that allows
+customization of what interface and port it listens to, where it keeps its
+gems and authentication tokens, etc. An example config is distributed with the
+gem.
+
 ## Contributing
 
-You can check out the current development source with Mercurial like so:
-
-    hg clone https://bitbucket.org/ged/gemserver
-
-Or if you prefer Git, via its Github mirror:
-
-    https://github.com/ged/gemserver
+You can check out the current development source with Mercurial [from BitBucket][bitbucket], or if you prefer Git, via [its Github mirror][github].
 
 After checking out the source, run:
 
 	$ rake newb
 
-This task will install any missing dependencies, run the tests/specs,
-and generate the API documentation.
+This task will install any missing dependencies, run the tests/specs, and
+generate the API documentation.
 
 
 ## License
@@ -63,3 +83,8 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+[bitbucket]: https://bitbucket.org/ged/gemserver
+[github]: https://github.com/ged/gemserver
+

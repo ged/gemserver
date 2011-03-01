@@ -1,10 +1,25 @@
+---
+
+# How verbosely to log (debug,info,warn,error,fatal)
 loglevel: info
+
+# Configure the Rack adapter
+#   env:: may be set to 'development' to turn on various settings suitable for doing
+#         development. Any other setting is current treated as 'production'.
 rack:
   host: 127.0.0.1
   port: 9292
-  env: development
+  env: production
+
+# Configure the gemserver
+#   name::    the name of the server displayed in the web interface
+#   gemsdir:: the directory to store uploaded gems, their indexes, and the 
+#             authtoken database
+#   ldapuri:: the URI of the LDAP server to bind to for authentication. 
+#             Setting this to nil (~) will cause it to use the system LDAP
+#             configuration.
 gemserver:
   name: Unconfigured
   gemsdir: /tmp/uploaded_gems
-  ldapuri: "ldap://localhost/dc=localhost"
+  ldapuri: ~
 
