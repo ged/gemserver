@@ -83,12 +83,6 @@ module Gemserver
 	LOG_LEVEL_NAMES = LOG_LEVELS.invert.freeze
 
 
-	### 
-	class UploadFailed < RuntimeError
-		
-	end
-
-
 	# Rack configuration values
 	@host = DEFAULT_HOST
 	@port = DEFAULT_PORT
