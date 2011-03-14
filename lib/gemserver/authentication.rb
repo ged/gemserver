@@ -56,8 +56,12 @@ module Gemserver::Authentication
 
 	### Returns true if the given +username+ and +password+ are valid 
 	### authentication.
-	def authenticate( username, password )
-		username = self.validate_username( username )
+	def authenticate( authuser, password )
+		unless username = self.validate_username( authuser )
+			self.log.error "Invalid username %p" % [ authuser ]
+			return false
+		end
+
 		user = self.ldap.base.
 			filter( :objectClass => :posixAccount ).
 			filter( :uid => username ).first

@@ -4,9 +4,21 @@
 
 ## Description
 
-This is an experimental minimalist Rubygems index and gem server for deploying private gems.
+This is an experimental minimalist Rubygems index and gem server for deploying
+private gems.
 
-It authenticates against an LDAP server, but it should be fairly easy to replace the authentication bits with something different.
+Authentication for auth-token generation is done by searching for a
+posixAccount with uid=<username> in an LDAP directory, and if the user is
+found, trying to bind against the directory as that user using the provided
+password.
+
+If you want to authenticate using some other mechanism, you'll need to replace
+the authentication bits in lib/gemserver/authentication.rb with your own code.
+
+You can customize the look and feel by altering the templates and static
+content under the gem's data directory.
+
+Auth tokens are stored in a SQLite database.
 
 Some notable features:
 
@@ -18,9 +30,11 @@ Some notable features:
 
 Caveats:
 
-* Not designed or tested in high-traffic situations
+* Not designed for or tested in high-traffic situations
 * Not super-configurable; assumes you have an environment similar to ours or 
   are willing to hack it a bit
+* Getting 'gem push' to push to a different gemserver with a different 
+  authtoken is not trivial
 
 
 ## Installation
@@ -40,11 +54,17 @@ Should you wish to run it in a permanent fashion, you'll want to create a
 `gemserver.conf` file in the directory you wish to run it from that allows
 customization of what interface and port it listens to, where it keeps its
 gems and authentication tokens, etc. An example config is distributed with the
-gem.
+gem (under data/gemserver/gemserver.conf.example).
+
+You'll likely want to run it behind a reverse proxy that wraps it in SSL like
+we do, as it currently just does Basic HTTP authentication.
+
 
 ## Contributing
 
-You can check out the current development source with Mercurial [from BitBucket][bitbucket], or if you prefer Git, via [its Github mirror][github].
+You can check out the current development source with Mercurial 
+[from BitBucket][bitbucket], or if you prefer Git, via 
+[its Github mirror][github].
 
 After checking out the source, run:
 
@@ -52,6 +72,14 @@ After checking out the source, run:
 
 This task will install any missing dependencies, run the tests/specs, and
 generate the API documentation.
+
+
+## Future Plans
+
+Make it more configurable:
+
+* Pluggable authentication
+* Configurable authtoken storage
 
 
 ## License

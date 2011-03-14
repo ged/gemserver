@@ -21,7 +21,7 @@ require 'gemserver'
 
 describe Gemserver do
 
-	before( :all ) do
+	before( :each ) do
 		setup_logging( :fatal )
 	end
 
@@ -39,7 +39,9 @@ describe Gemserver do
 
 	it "has reasonable defaults" do
 		argv = []
+		Gemserver.stub!( :find_standard_config ).and_return( nil )
 		config = Gemserver.load_config( argv )
+		config.loglevel.should == :info
 		config.rack.host.should == Gemserver::DEFAULT_HOST
 		config.rack.port.should == Gemserver::DEFAULT_PORT
 		config.rack.env.should == Gemserver::DEFAULT_RACK_ENV
