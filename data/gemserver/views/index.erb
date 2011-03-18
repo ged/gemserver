@@ -12,7 +12,9 @@
 		</thead>
 
 		<tbody>
-		<% gemindex.latest_specs.each_with_index do |gemspec, i| %>
+		<% gemindex.latest_specs.
+			sort_by {|gemspec, _| gemspec.name }.
+			each_with_index do |gemspec, i| %>
 		<% if (i % 2).nonzero? %>
 			<tr class="odd">
 		<% else %>
