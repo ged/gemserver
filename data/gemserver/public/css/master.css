@@ -25,6 +25,14 @@ html {
 	min-height: 100%;
 }
 
+/* Make these block-level elements explicitly so FF<4 renders them correctly */
+section,
+article,
+aside,
+header,
+footer { display: block; }
+
+
 body {
 	background: #f0f0f2;
 	background-image: -webkit-gradient(radial, 
